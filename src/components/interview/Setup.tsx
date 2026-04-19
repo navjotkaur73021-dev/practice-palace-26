@@ -1,20 +1,17 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ROLES, type Role } from "@/lib/interviewData";
-import { ArrowLeft, ArrowRight, Upload, Check, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type Props = {
   onBack: () => void;
-  onStart: (role: Role, resumeName: string | null) => void;
+  onStart: (role: Role) => void;
 };
 
 export const Setup = ({ onBack, onStart }: Props) => {
   const [selectedId, setSelectedId] = useState<string>(ROLES[0].id);
-  const [resumeName, setResumeName] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   return (
@@ -35,16 +32,15 @@ export const Setup = ({ onBack, onStart }: Props) => {
             Step 1 of 1
           </span>
           <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight md:text-5xl text-balance">
-            Let's tailor your <span className="text-accent italic">session.</span>
+            Pick your <span className="text-accent italic">role.</span>
           </h1>
           <p className="mt-3 text-lg text-muted-foreground">
-            Pick a role and (optionally) drop in your resume.
+            Choose what you're interviewing for. We'll tailor the questions.
           </p>
         </div>
 
         <section className="mt-12">
-          <h2 className="font-display text-xl font-semibold">Choose your role</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {ROLES.map((r) => {
               const active = r.id === selectedId;
               return (
@@ -57,10 +53,13 @@ export const Setup = ({ onBack, onStart }: Props) => {
                       : "border-border bg-card hover:border-foreground/20 hover:shadow-soft"
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-display text-lg font-semibold">{r.title}</div>
                       <p className="mt-1 text-sm text-muted-foreground">{r.blurb}</p>
+                      <div className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">
+                        {r.questions.length} questions
+                      </div>
                     </div>
                     <div
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
@@ -76,40 +75,11 @@ export const Setup = ({ onBack, onStart }: Props) => {
           </div>
         </section>
 
-        <section className="mt-10">
-          <h2 className="font-display text-xl font-semibold">
-            Upload your resume <span className="text-sm font-normal text-muted-foreground">(optional)</span>
-          </h2>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.txt"
-            className="hidden"
-            onChange={(e) => setResumeName(e.target.files?.[0]?.name ?? null)}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="mt-4 flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-card p-6 text-left transition-all hover:border-accent hover:bg-secondary/40"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-foreground">
-              {resumeName ? <FileText className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
-            </div>
-            <div className="flex-1">
-              <div className="font-medium">
-                {resumeName ?? "Drop or click to upload"}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {resumeName ? "Tap to replace" : "PDF, DOCX, or TXT — we'll personalize questions"}
-              </div>
-            </div>
-          </button>
-        </section>
-
-        <div className="mt-12 flex items-center justify-between border-t border-border pt-8">
+        <div className="mt-12 flex items-center justify-between gap-4 border-t border-border pt-8">
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{role.title}</span> · {role.questions.length} questions
+            <span className="font-medium text-foreground">{role.title}</span> · 90s per question
           </div>
-          <Button variant="hero" size="lg" onClick={() => onStart(role, resumeName)}>
+          <Button variant="hero" size="lg" onClick={() => onStart(role)}>
             Begin Interview
             <ArrowRight />
           </Button>
