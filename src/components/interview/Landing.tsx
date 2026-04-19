@@ -1,21 +1,50 @@
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Mic, FileText, BarChart3 } from "lucide-react";
+import { ArrowRight, Sparkles, Mic, FileText, BarChart3, Lightbulb } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
 
 type Props = { onStart: () => void };
+
+const TIPS = [
+  {
+    title: "Use the STAR framework",
+    body: "Situation, Task, Action, Result. It keeps long answers focused and memorable.",
+  },
+  {
+    title: "Quantify your impact",
+    body: "Numbers stick. \"Cut load time 40%\" beats \"made it faster\" every time.",
+  },
+  {
+    title: "Pause before you answer",
+    body: "Two seconds of silence reads as confidence. Rambling reads as nerves.",
+  },
+  {
+    title: "Practice out loud",
+    body: "Reading answers in your head is a trap. Speaking trains the actual muscle.",
+  },
+];
 
 export const Landing = ({ onStart }: Props) => {
   return (
     <div className="min-h-screen bg-gradient-cream">
       <header className="container flex items-center justify-between py-6">
         <Logo />
-        <a
-          href="#how"
-          className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
-        >
-          How it works
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href="#tips"
+            className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+          >
+            Tips
+          </a>
+          <a
+            href="#how"
+            className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+          >
+            How it works
+          </a>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="container relative pb-24 pt-8 md:pt-16">
@@ -32,8 +61,8 @@ export const Landing = ({ onStart }: Props) => {
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground text-balance">
               Practice realistic interviews tailored to your role and resume.
-              Speak your answers aloud, get instant feedback, and build the
-              confidence to nail the real thing.
+              Speak your answers aloud, beat the timer, and get instant feedback
+              that builds real confidence.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -67,6 +96,8 @@ export const Landing = ({ onStart }: Props) => {
                 alt="Abstract editorial illustration representing calm interview preparation"
                 className="aspect-square w-full object-cover"
                 loading="eager"
+                width={1280}
+                height={1280}
               />
             </div>
             <div className="absolute -bottom-6 -left-6 max-w-[260px] rounded-2xl bg-card p-5 shadow-lifted">
@@ -100,6 +131,36 @@ export const Landing = ({ onStart }: Props) => {
                   <span className="text-accent">0{i + 1}</span> &nbsp;{title}
                 </h3>
                 <p className="mt-2 text-muted-foreground">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="tips" className="mt-32">
+          <div className="flex items-end justify-between gap-8">
+            <div>
+              <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent">
+                <Lightbulb className="h-3.5 w-3.5" />
+                Coach tips
+              </span>
+              <h2 className="mt-2 font-display text-3xl font-semibold md:text-4xl text-balance">
+                Four things that move the needle.
+              </h2>
+            </div>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {TIPS.map((tip, i) => (
+              <div
+                key={tip.title}
+                className="flex gap-5 rounded-3xl border border-border bg-card p-6 shadow-soft"
+              >
+                <span className="font-display text-3xl font-semibold leading-none text-accent/40">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="font-display text-lg font-semibold">{tip.title}</h3>
+                  <p className="mt-1 text-muted-foreground">{tip.body}</p>
+                </div>
               </div>
             ))}
           </div>
