@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import type { Role } from "@/lib/interviewData";
-import { Mic, MicOff, ArrowRight, X } from "lucide-react";
+import { Mic, MicOff, ArrowRight, X, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 type Props = {
@@ -12,20 +12,47 @@ type Props = {
   onComplete: (answers: string[]) => void;
 };
 
+const QUESTION_SECONDS = 90;
+
 export const Interview = ({ role, onExit, onComplete }: Props) => {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>(() => role.questions.map(() => ""));
   const [text, setText] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
   const sr = useSpeechRecognition();
+  const advanceRef = useRef<() => void>(() => {});
 
   const question = role.questions[index];
   const total = role.questions.length;
   const progress = ((index) / total) * 100;
+  const timePct = (secondsLeft / QUESTION_SECONDS) * 100;
+  const urgent = secondsLeft <= 15;
 
-  // When speech transcript updates, mirror into text
+  // Mirror voice transcript into text
   useEffect(() => {
     if (sr.listening) setText(sr.transcript);
   }, [sr.transcript, sr.listening]);
+
+  // Reset timer per question
+  useEffect(() => {
+    setSecondsLeft(QUESTION_SECONDS);
+  }, [index]);
+
+  // Tick
+  useEffect(() => {
+    const t = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(t);
+          // auto-advance when time runs out
+          setTimeout(() => advanceRef.current(), 0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [index]);
 
   const handleMicToggle = () => {
     if (!sr.supported) {
@@ -54,6 +81,10 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
       sr.reset(next[index + 1] ?? "");
     }
   };
+  advanceRef.current = handleNext;
+
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(1, "0");
+  const ss = String(secondsLeft % 60).padStart(2, "0");
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,18 +95,31 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
         </Button>
       </header>
 
-      {/* Progress */}
+      {/* Progress + timer */}
       <div className="container">
         <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground">
           <span>{role.title}</span>
-          <span>
-            Question {index + 1} <span className="text-foreground/40">/ {total}</span>
+          <span className="flex items-center gap-4">
+            <span className={`flex items-center gap-1.5 tabular-nums transition-colors ${urgent ? "text-destructive" : ""}`}>
+              <Clock className="h-3.5 w-3.5" />
+              {mm}:{ss}
+            </span>
+            <span>
+              Question {index + 1} <span className="text-foreground/40">/ {total}</span>
+            </span>
           </span>
         </div>
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
           <div
             className="h-full bg-gradient-warm transition-all duration-500"
             style={{ width: `${progress}%` }}
+          />
+        </div>
+        {/* Per-question timer bar */}
+        <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-secondary/60">
+          <div
+            className={`h-full transition-all duration-1000 ease-linear ${urgent ? "bg-destructive" : "bg-foreground/40"}`}
+            style={{ width: `${timePct}%` }}
           />
         </div>
       </div>

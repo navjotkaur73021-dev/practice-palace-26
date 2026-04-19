@@ -1,7 +1,8 @@
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { type Role, scoreAnswer } from "@/lib/interviewData";
-import { RotateCcw, Home, TrendingUp } from "lucide-react";
+import { RotateCcw, Home, TrendingUp, BarChart3 } from "lucide-react";
 
 type Props = {
   role: Role;
@@ -13,19 +14,24 @@ type Props = {
 export const Results = ({ role, answers, onRestart, onHome }: Props) => {
   const scored = role.questions.map((q, i) => ({ q, ...scoreAnswer(answers[i] ?? ""), answer: answers[i] ?? "" }));
   const overall = Math.round(scored.reduce((s, x) => s + x.score, 0) / scored.length);
+  const best = Math.max(...scored.map((s) => s.score));
+  const weakest = Math.min(...scored.map((s) => s.score));
 
   const verdict =
-    overall >= 80 ? { label: "Interview-ready", tone: "strong" }
-    : overall >= 60 ? { label: "Almost there", tone: "mid" }
-    : { label: "Keep practicing", tone: "low" };
+    overall >= 80 ? { label: "Interview-ready" }
+    : overall >= 60 ? { label: "Almost there" }
+    : { label: "Keep practicing" };
 
   return (
     <div className="min-h-screen bg-gradient-cream">
       <header className="container flex items-center justify-between py-6">
         <Logo />
-        <Button variant="ghost" size="sm" onClick={onHome}>
-          <Home /> Home
-        </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={onHome}>
+            <Home /> Home
+          </Button>
+        </div>
       </header>
 
       <main className="container max-w-4xl pb-24 pt-4">
@@ -57,7 +63,7 @@ export const Results = ({ role, answers, onRestart, onHome }: Props) => {
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button variant="hero" size="lg" onClick={onRestart}>
-              <RotateCcw /> Practice again
+              <RotateCcw /> Retry interview
             </Button>
             <Button variant="outline" size="lg" onClick={onHome}>
               Try a different role
@@ -65,7 +71,48 @@ export const Results = ({ role, answers, onRestart, onHome }: Props) => {
           </div>
         </div>
 
-        <section className="mt-20">
+        {/* Stat cards */}
+        <section className="mt-16 grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Best answer", value: best, hint: `Q${scored.findIndex((s) => s.score === best) + 1}` },
+            { label: "Needs work", value: weakest, hint: `Q${scored.findIndex((s) => s.score === weakest) + 1}` },
+            { label: "Questions", value: scored.length, hint: "completed" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-display text-3xl font-semibold tabular-nums">{s.value}</span>
+                <span className="text-sm text-muted-foreground">{s.hint}</span>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Bar chart */}
+        <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-accent" />
+            <h2 className="font-display text-xl font-semibold">Score by question</h2>
+          </div>
+          <div className="mt-8 flex h-48 items-end gap-3 sm:gap-5">
+            {scored.map((s, i) => (
+              <div key={i} className="group flex flex-1 flex-col items-center gap-2">
+                <div className="text-xs font-medium tabular-nums text-muted-foreground transition-colors group-hover:text-accent">
+                  {s.score}
+                </div>
+                <div className="relative w-full flex-1 overflow-hidden rounded-t-xl bg-secondary">
+                  <div
+                    className="absolute inset-x-0 bottom-0 bg-gradient-warm transition-all duration-1000 ease-out"
+                    style={{ height: `${s.score}%` }}
+                  />
+                </div>
+                <div className="font-display text-xs text-muted-foreground">Q{i + 1}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-accent" />
             <h2 className="font-display text-2xl font-semibold">Question-by-question</h2>
