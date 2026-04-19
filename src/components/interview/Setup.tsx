@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ROLES, type Role } from "@/lib/interviewData";
 import { ArrowLeft, ArrowRight, Upload, Check, FileText } from "lucide-react";
@@ -20,9 +21,12 @@ export const Setup = ({ onBack, onStart }: Props) => {
     <div className="min-h-screen bg-background">
       <header className="container flex items-center justify-between py-6">
         <Logo />
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft /> Back
-        </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft /> Back
+          </Button>
+        </div>
       </header>
 
       <main className="container max-w-3xl pb-20 pt-4">
