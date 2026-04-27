@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ROLES, LANGUAGES, type Role, type Language } from "@/lib/interviewData";
+import { loadSetupSettings, saveSetupSettings } from "@/lib/settingsStorage";
 import { ArrowLeft, ArrowRight, Check, Languages, Hash } from "lucide-react";
 
 type Props = {
@@ -13,10 +14,21 @@ type Props = {
 const COUNTS = [3, 5, 7, 10];
 
 export const Setup = ({ onBack, onStart }: Props) => {
-  const [selectedId, setSelectedId] = useState<string>(ROLES[0].id);
-  const [language, setLanguage] = useState<Language>("en");
-  const [count, setCount] = useState<number>(5);
+  const saved = loadSetupSettings();
+  const initialId =
+    saved.roleId && ROLES.some((r) => r.id === saved.roleId) ? saved.roleId : ROLES[0].id;
+  const initialLang: Language = saved.language === "hi" || saved.language === "en" ? saved.language : "en";
+  const initialCount = saved.count && COUNTS.includes(saved.count) ? saved.count : 5;
+
+  const [selectedId, setSelectedId] = useState<string>(initialId);
+  const [language, setLanguage] = useState<Language>(initialLang);
+  const [count, setCount] = useState<number>(initialCount);
   const role = ROLES.find((r) => r.id === selectedId)!;
+
+  // Persist any change so the next visit restores their last choices.
+  useEffect(() => {
+    saveSetupSettings({ roleId: selectedId, language, count });
+  }, [selectedId, language, count]);
 
   return (
     <div className="min-h-screen bg-background">
