@@ -1,11 +1,28 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { type Role, type Language } from "@/lib/interviewData";
 import { supabase } from "@/integrations/supabase/client";
-import { RotateCcw, Home, TrendingUp, BarChart3, Loader2, Sparkles } from "lucide-react";
+import {
+  RotateCcw,
+  Home,
+  TrendingUp,
+  BarChart3,
+  Loader2,
+  Sparkles,
+  RefreshCw,
+  Download,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  saveSession,
+  updateSession,
+  exportSessionMarkdown,
+  downloadFile,
+  type SavedScored,
+} from "@/lib/sessionStorage";
 
 type Props = {
   role: Role;
@@ -16,50 +33,91 @@ type Props = {
   onHome: () => void;
 };
 
-type Scored = {
-  score: number;
-  feedback: string;
-  improved: string;
-};
-
 export const Results = ({ role, language, questions, answers, onRestart, onHome }: Props) => {
-  const [scored, setScored] = useState<(Scored | null)[]>(() => questions.map(() => null));
+  const [scored, setScored] = useState<SavedScored[]>(() => questions.map(() => null));
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState<Record<number, boolean>>({});
+  const sessionIdRef = useRef<string | null>(null);
 
+  const scoreOne = useCallback(
+    async (i: number): Promise<SavedScored> => {
+      const { data, error } = await supabase.functions.invoke("score-answer", {
+        body: {
+          roleTitle: role.title,
+          question: questions[i],
+          answer: answers[i] ?? "",
+          language,
+        },
+      });
+      if (error || !data || typeof data.score !== "number") {
+        console.error("Scoring failed for Q" + (i + 1), error, data);
+        return null;
+      }
+      return data as SavedScored;
+    },
+    [role.title, questions, answers, language],
+  );
+
+  // Initial scoring + save
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const results: (Scored | null)[] = await Promise.all(
-        questions.map(async (q, i) => {
-          const { data, error } = await supabase.functions.invoke("score-answer", {
-            body: {
-              roleTitle: role.title,
-              question: q,
-              answer: answers[i] ?? "",
-              language,
-            },
-          });
-          if (error || !data || typeof data.score !== "number") {
-            console.error("Scoring failed for Q" + (i + 1), error, data);
-            return null;
-          }
-          return data as Scored;
-        }),
-      );
+      const results = await Promise.all(questions.map((_, i) => scoreOne(i)));
       if (cancelled) return;
       setScored(results);
       setLoading(false);
+
+      const valid = results.filter((s): s is NonNullable<SavedScored> => !!s);
+      const overall = valid.length
+        ? Math.round(valid.reduce((s, x) => s + x.score, 0) / valid.length)
+        : 0;
+      const session = saveSession({
+        roleId: role.id,
+        roleTitle: role.title,
+        language,
+        questions,
+        answers,
+        scored: results,
+        overall,
+      });
+      sessionIdRef.current = session.id;
+
       if (results.some((r) => r === null)) {
-        toast.error("Some answers couldn't be scored. Showing what we have.");
+        toast.error("Some answers couldn't be scored. Use Retry on those cards.");
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [questions, answers, role.title, language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const valid = scored.filter((s): s is Scored => !!s);
+  const handleRetry = async (i: number) => {
+    setRetrying((r) => ({ ...r, [i]: true }));
+    const result = await scoreOne(i);
+    setRetrying((r) => ({ ...r, [i]: false }));
+    if (!result) {
+      toast.error(`Couldn't score Q${i + 1}. Try again in a moment.`);
+      return;
+    }
+    setScored((prev) => {
+      const next = [...prev];
+      next[i] = result;
+      // Persist updated session
+      if (sessionIdRef.current) {
+        const valid = next.filter((s): s is NonNullable<SavedScored> => !!s);
+        const overall = valid.length
+          ? Math.round(valid.reduce((s, x) => s + x.score, 0) / valid.length)
+          : 0;
+        updateSession(sessionIdRef.current, { scored: next, overall });
+      }
+      return next;
+    });
+    toast.success(`Q${i + 1} scored.`);
+  };
+
+  const valid = scored.filter((s): s is NonNullable<SavedScored> => !!s);
   const overall = valid.length
     ? Math.round(valid.reduce((s, x) => s + x.score, 0) / valid.length)
     : 0;
@@ -67,9 +125,49 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
   const weakest = valid.length ? Math.min(...valid.map((s) => s.score)) : 0;
 
   const verdict =
-    overall >= 80 ? { label: "Interview-ready" }
-    : overall >= 60 ? { label: "Almost there" }
-    : { label: "Keep practicing" };
+    overall >= 80
+      ? { label: "Interview-ready" }
+      : overall >= 60
+      ? { label: "Almost there" }
+      : { label: "Keep practicing" };
+
+  const exportSession = (format: "md" | "json") => {
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+    const base = `poise-${role.id}-${stamp}`;
+    if (format === "md") {
+      const md = exportSessionMarkdown(
+        {
+          id: sessionIdRef.current ?? "current",
+          createdAt: Date.now(),
+          roleId: role.id,
+          roleTitle: role.title,
+          language,
+          questions,
+          answers,
+          scored,
+          overall,
+        },
+        role,
+      );
+      downloadFile(`${base}.md`, md, "text/markdown");
+    } else {
+      const json = JSON.stringify(
+        {
+          role: { id: role.id, title: role.title },
+          language,
+          overall,
+          questions,
+          answers,
+          scored,
+          exportedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      );
+      downloadFile(`${base}.json`, json, "application/json");
+    }
+    toast.success(`Exported as ${format.toUpperCase()}.`);
+  };
 
   if (loading) {
     return (
@@ -134,8 +232,11 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
             <Button variant="hero" size="lg" onClick={onRestart}>
               <RotateCcw /> Retry interview
             </Button>
-            <Button variant="outline" size="lg" onClick={onHome}>
-              Try a different role
+            <Button variant="outline" size="lg" onClick={() => exportSession("md")}>
+              <FileText /> Export Markdown
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => exportSession("json")}>
+              <Download /> Export JSON
             </Button>
           </div>
         </div>
@@ -189,6 +290,7 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
             {questions.map((q, i) => {
               const s = scored[i];
               const answer = answers[i] ?? "";
+              const isRetrying = retrying[i];
               return (
                 <article
                   key={i}
@@ -241,8 +343,26 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
                       )}
                     </>
                   ) : (
-                    <div className="mt-5 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
-                      Couldn't score this answer.
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-destructive/40 bg-destructive/5 p-4">
+                      <div className="text-sm text-muted-foreground">
+                        Couldn't score this answer.
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRetry(i)}
+                        disabled={isRetrying}
+                      >
+                        {isRetrying ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying…
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3.5 w-3.5" /> Retry scoring
+                          </>
+                        )}
+                      </Button>
                     </div>
                   )}
                 </article>
