@@ -2,29 +2,63 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import type { Role } from "@/lib/interviewData";
-import { Mic, MicOff, ArrowRight, X, Clock } from "lucide-react";
+import { LANGUAGES, type Language, type Role } from "@/lib/interviewData";
+import { supabase } from "@/integrations/supabase/client";
+import { Mic, MicOff, ArrowRight, X, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Props = {
   role: Role;
+  language: Language;
   onExit: () => void;
-  onComplete: (answers: string[]) => void;
+  onComplete: (questions: string[], answers: string[]) => void;
 };
 
 const QUESTION_SECONDS = 90;
 
-export const Interview = ({ role, onExit, onComplete }: Props) => {
+export const Interview = ({ role, language, onExit, onComplete }: Props) => {
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(() => role.questions.map(() => ""));
+  const [answers, setAnswers] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
-  const sr = useSpeechRecognition();
+  const speechLang = LANGUAGES.find((l) => l.id === language)?.speechLang ?? "en-US";
+  const sr = useSpeechRecognition(speechLang);
   const advanceRef = useRef<() => void>(() => {});
 
-  const question = role.questions[index];
-  const total = role.questions.length;
-  const progress = ((index) / total) * 100;
+  // Fetch AI questions on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingQuestions(true);
+      const { data, error } = await supabase.functions.invoke("generate-questions", {
+        body: {
+          roleTitle: role.title,
+          roleBlurb: role.blurb,
+          language,
+          count: 5,
+        },
+      });
+      if (cancelled) return;
+      if (error || !data?.questions) {
+        console.error("Question generation failed", error);
+        toast.error(data?.error || "Couldn't generate questions. Please try again.");
+        setLoadingQuestions(false);
+        return;
+      }
+      setQuestions(data.questions);
+      setAnswers(data.questions.map(() => ""));
+      setLoadingQuestions(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role.id, language]);
+
+  const question = questions[index];
+  const total = questions.length;
+  const progress = total ? (index / total) * 100 : 0;
   const timePct = (secondsLeft / QUESTION_SECONDS) * 100;
   const urgent = secondsLeft <= 15;
 
@@ -38,13 +72,13 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
     setSecondsLeft(QUESTION_SECONDS);
   }, [index]);
 
-  // Tick
+  // Tick (only once questions loaded)
   useEffect(() => {
+    if (loadingQuestions || !total) return;
     const t = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(t);
-          // auto-advance when time runs out
           setTimeout(() => advanceRef.current(), 0);
           return 0;
         }
@@ -52,7 +86,7 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [index]);
+  }, [index, loadingQuestions, total]);
 
   const handleMicToggle = () => {
     if (!sr.supported) {
@@ -74,7 +108,7 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
     setAnswers(next);
 
     if (index + 1 >= total) {
-      onComplete(next);
+      onComplete(questions, next);
     } else {
       setIndex(index + 1);
       setText(next[index + 1] ?? "");
@@ -86,6 +120,48 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
   const mm = String(Math.floor(secondsLeft / 60)).padStart(1, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
 
+  if (loadingQuestions) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="container flex items-center justify-between py-6">
+          <Logo />
+          <Button variant="ghost" size="sm" onClick={onExit}>
+            <X /> Exit
+          </Button>
+        </header>
+        <main className="container flex min-h-[60vh] max-w-3xl flex-col items-center justify-center text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <h2 className="mt-6 font-display text-2xl font-semibold">
+            Crafting your interview…
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            Your AI coach is preparing tailored questions for {role.title}.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!total) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="container flex items-center justify-between py-6">
+          <Logo />
+          <Button variant="ghost" size="sm" onClick={onExit}>
+            <X /> Exit
+          </Button>
+        </header>
+        <main className="container max-w-3xl py-24 text-center">
+          <h2 className="font-display text-2xl font-semibold">Couldn't load questions.</h2>
+          <p className="mt-2 text-muted-foreground">Please head back and try again.</p>
+          <Button className="mt-6" variant="hero" onClick={onExit}>
+            Back to setup
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="container flex items-center justify-between py-6">
@@ -95,10 +171,9 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
         </Button>
       </header>
 
-      {/* Progress + timer */}
       <div className="container">
         <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          <span>{role.title}</span>
+          <span>{role.title} · {LANGUAGES.find((l) => l.id === language)?.native}</span>
           <span className="flex items-center gap-4">
             <span className={`flex items-center gap-1.5 tabular-nums transition-colors ${urgent ? "text-destructive" : ""}`}>
               <Clock className="h-3.5 w-3.5" />
@@ -115,7 +190,6 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
             style={{ width: `${progress}%` }}
           />
         </div>
-        {/* Per-question timer bar */}
         <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-secondary/60">
           <div
             className={`h-full transition-all duration-1000 ease-linear ${urgent ? "bg-destructive" : "bg-foreground/40"}`}
@@ -154,7 +228,6 @@ export const Interview = ({ role, onExit, onComplete }: Props) => {
         </div>
       </main>
 
-      {/* Floating action bar */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-md">
         <div className="container flex max-w-3xl items-center justify-between gap-4 py-4">
           <button
