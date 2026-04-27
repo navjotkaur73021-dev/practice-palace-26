@@ -3,20 +3,26 @@ import { Landing } from "@/components/interview/Landing";
 import { Setup } from "@/components/interview/Setup";
 import { Interview } from "@/components/interview/Interview";
 import { Results } from "@/components/interview/Results";
-import type { Role } from "@/lib/interviewData";
+import type { Role, Language } from "@/lib/interviewData";
 
 type Stage = "landing" | "setup" | "interview" | "results";
 
 const Index = () => {
   const [stage, setStage] = useState<Stage>("landing");
   const [role, setRole] = useState<Role | null>(null);
+  const [language, setLanguage] = useState<Language>("en");
+  const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
 
-  // Set page metadata once
   if (typeof document !== "undefined") {
     document.title = "Poise — AI Interview Practice that Builds Real Confidence";
-    const meta = document.querySelector('meta[name="description"]') ?? document.head.appendChild(Object.assign(document.createElement("meta"), { name: "description" }));
-    (meta as HTMLMetaElement).setAttribute("content", "Practice tailored mock interviews by role, answer with voice or text, and get instant AI feedback. No sign-up required.");
+    const meta =
+      document.querySelector('meta[name="description"]') ??
+      document.head.appendChild(Object.assign(document.createElement("meta"), { name: "description" }));
+    (meta as HTMLMetaElement).setAttribute(
+      "content",
+      "Practice tailored AI mock interviews in English or Hindi. Speak or type your answers and get real-time feedback. No sign-up required.",
+    );
   }
 
   return (
@@ -25,8 +31,10 @@ const Index = () => {
       {stage === "setup" && (
         <Setup
           onBack={() => setStage("landing")}
-          onStart={(r) => {
+          onStart={(r, lang) => {
             setRole(r);
+            setLanguage(lang);
+            setQuestions([]);
             setAnswers([]);
             setStage("interview");
           }}
@@ -35,8 +43,10 @@ const Index = () => {
       {stage === "interview" && role && (
         <Interview
           role={role}
+          language={language}
           onExit={() => setStage("setup")}
-          onComplete={(a) => {
+          onComplete={(qs, a) => {
+            setQuestions(qs);
             setAnswers(a);
             setStage("results");
           }}
@@ -45,6 +55,8 @@ const Index = () => {
       {stage === "results" && role && (
         <Results
           role={role}
+          language={language}
+          questions={questions}
           answers={answers}
           onRestart={() => setStage("interview")}
           onHome={() => setStage("landing")}

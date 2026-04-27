@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-// Web Speech API typing
-type SR = typeof window extends { SpeechRecognition: infer T } ? T : any;
-
-export function useSpeechRecognition() {
+export function useSpeechRecognition(lang: string = "en-US") {
   const [transcript, setTranscript] = useState("");
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
@@ -20,7 +17,7 @@ export function useSpeechRecognition() {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "en-US";
+    recognition.lang = lang;
 
     recognition.onresult = (event: any) => {
       let interim = "";
@@ -38,7 +35,7 @@ export function useSpeechRecognition() {
     return () => {
       try { recognition.stop(); } catch {}
     };
-  }, []);
+  }, [lang]);
 
   const start = () => {
     if (!recognitionRef.current) return;
