@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
+import logoMark from "@/assets/omni-prep-logo.png";
 
 type Props = { onStart: () => void; onHistory: () => void };
 
