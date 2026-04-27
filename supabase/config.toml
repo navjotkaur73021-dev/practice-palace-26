@@ -1,1 +1,7 @@
 project_id = "bselylctqszhcqfkwehm"
+
+[functions.generate-questions]
+verify_jwt = false
+
+[functions.score-answer]
+verify_jwt = false
