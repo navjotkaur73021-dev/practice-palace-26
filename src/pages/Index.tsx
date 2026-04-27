@@ -30,6 +30,7 @@ const Index = () => {
 
   return (
     <>
+      {stage === "splash" && <Splash onDone={() => setStage("landing")} />}
       {stage === "landing" && (
         <Landing
           onStart={() => setStage("setup")}
