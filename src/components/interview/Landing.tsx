@@ -1,7 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Mic, FileText, BarChart3, Lightbulb } from "lucide-react";
+import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
 
 type Props = { onStart: () => void };
@@ -60,9 +60,9 @@ export const Landing = ({ onStart }: Props) => {
               Walk out <span className="italic">hired.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground text-balance">
-              Practice realistic interviews tailored to your role and resume.
-              Speak your answers aloud, beat the timer, and get instant feedback
-              that builds real confidence.
+              AI-generated mock interviews tailored to your role, in English or
+              Hindi. Speak your answers aloud, beat the timer, and get instant
+              coach feedback with a stronger answer rewritten for you.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -116,9 +116,9 @@ export const Landing = ({ onStart }: Props) => {
           <h2 className="font-display text-3xl font-semibold md:text-4xl">How it works</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {[
-              { Icon: FileText, title: "Upload & choose", body: "Drop your resume and pick the role you're targeting." },
+              { Icon: Languages, title: "Pick role & language", body: "Choose your target role and practice in English or Hindi." },
               { Icon: Mic, title: "Speak or type", body: "Answer questions aloud or in writing — your call." },
-              { Icon: BarChart3, title: "Get scored", body: "See what landed, what didn't, and exactly how to improve." },
+              { Icon: BarChart3, title: "AI scores you", body: "Get a score, written feedback, and a stronger sample answer." },
             ].map(({ Icon, title, body }, i) => (
               <div
                 key={title}
