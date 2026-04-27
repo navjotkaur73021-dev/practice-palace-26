@@ -1,23 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Landing } from "@/components/interview/Landing";
 import { Setup } from "@/components/interview/Setup";
 import { Interview } from "@/components/interview/Interview";
 import { Results } from "@/components/interview/Results";
 import { History } from "@/components/interview/History";
+import { Splash } from "@/components/interview/Splash";
 import type { Role, Language } from "@/lib/interviewData";
 
-type Stage = "landing" | "setup" | "interview" | "results" | "history";
+type Stage = "splash" | "landing" | "setup" | "interview" | "results" | "history";
 
 const Index = () => {
-  const [stage, setStage] = useState<Stage>("landing");
+  const [stage, setStage] = useState<Stage>("splash");
   const [role, setRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>("en");
   const [count, setCount] = useState<number>(5);
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
 
-  if (typeof document !== "undefined") {
-    document.title = "Poise — AI Interview Practice that Builds Real Confidence";
+  useEffect(() => {
+    document.title = "Poise — AI Interview Practice in English & Hindi";
     const meta =
       document.querySelector('meta[name="description"]') ??
       document.head.appendChild(Object.assign(document.createElement("meta"), { name: "description" }));
@@ -25,10 +26,11 @@ const Index = () => {
       "content",
       "Practice tailored AI mock interviews in English or Hindi. Speak or type your answers and get real-time feedback. No sign-up required.",
     );
-  }
+  }, []);
 
   return (
     <>
+      {stage === "splash" && <Splash onDone={() => setStage("landing")} />}
       {stage === "landing" && (
         <Landing
           onStart={() => setStage("setup")}
