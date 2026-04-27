@@ -4,19 +4,20 @@ import { Button } from "@/components/ui/button";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { LANGUAGES, type Language, type Role } from "@/lib/interviewData";
 import { supabase } from "@/integrations/supabase/client";
-import { Mic, MicOff, ArrowRight, X, Clock, Loader2 } from "lucide-react";
+import { Mic, MicOff, ArrowRight, X, Clock, Loader2, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Props = {
   role: Role;
   language: Language;
+  count: number;
   onExit: () => void;
   onComplete: (questions: string[], answers: string[]) => void;
 };
 
 const QUESTION_SECONDS = 90;
 
-export const Interview = ({ role, language, onExit, onComplete }: Props) => {
+export const Interview = ({ role, language, count, onExit, onComplete }: Props) => {
   const [questions, setQuestions] = useState<string[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [index, setIndex] = useState(0);
@@ -37,7 +38,7 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
           roleTitle: role.title,
           roleBlurb: role.blurb,
           language,
-          count: 5,
+          count,
         },
       });
       if (cancelled) return;
@@ -54,7 +55,7 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
     return () => {
       cancelled = true;
     };
-  }, [role.id, language]);
+  }, [role.id, language, count]);
 
   const question = questions[index];
   const total = questions.length;
@@ -66,6 +67,11 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
   useEffect(() => {
     if (sr.listening) setText(sr.transcript);
   }, [sr.transcript, sr.listening]);
+
+  // Surface voice errors as toasts (one-shot)
+  useEffect(() => {
+    if (sr.error) toast.error(sr.error);
+  }, [sr.error]);
 
   // Reset timer per question
   useEffect(() => {
@@ -99,6 +105,12 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
       sr.reset(text);
       sr.start();
     }
+  };
+
+  const handleClear = () => {
+    if (sr.listening) sr.stop();
+    sr.reset("");
+    setText("");
   };
 
   const handleNext = () => {
@@ -208,21 +220,51 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
           </h1>
 
           <div className="mt-10">
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={sr.listening ? "Listening… speak naturally" : "Type your answer, or tap the mic to speak"}
-              rows={8}
-              className="w-full resize-none rounded-2xl border border-border bg-card p-5 text-base leading-relaxed text-foreground shadow-soft outline-none transition-all placeholder:text-muted-foreground focus:border-accent focus:shadow-coral"
-            />
+            <div className="relative">
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={
+                  sr.listening
+                    ? "Listening… speak naturally"
+                    : sr.supported
+                    ? "Type your answer, or tap the mic to speak"
+                    : "Type your answer (voice input not supported in this browser)"
+                }
+                rows={8}
+                className={`w-full resize-none rounded-2xl border bg-card p-5 text-base leading-relaxed text-foreground shadow-soft outline-none transition-all placeholder:text-muted-foreground focus:shadow-coral ${
+                  sr.listening ? "border-accent ring-2 ring-accent/20" : "border-border focus:border-accent"
+                }`}
+              />
+              {sr.listening && (
+                <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+                  </span>
+                  Listening
+                </div>
+              )}
+            </div>
             <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>{text.trim() ? text.trim().split(/\s+/).length : 0} words</span>
-              {sr.listening && (
-                <span className="flex items-center gap-2 text-accent">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                  Recording
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {!sr.supported && (
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Voice unsupported — use Chrome/Edge
+                  </span>
+                )}
+                {text && (
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" /> Clear
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -232,10 +274,11 @@ export const Interview = ({ role, language, onExit, onComplete }: Props) => {
         <div className="container flex max-w-3xl items-center justify-between gap-4 py-4">
           <button
             onClick={handleMicToggle}
+            disabled={!sr.supported}
             aria-label={sr.listening ? "Stop recording" : "Start voice answer"}
-            className={`flex h-14 w-14 items-center justify-center rounded-full transition-all ${
+            className={`flex h-14 w-14 items-center justify-center rounded-full transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
               sr.listening
-                ? "bg-accent text-accent-foreground animate-pulse-mic"
+                ? "bg-accent text-accent-foreground animate-pulse-mic shadow-coral"
                 : "bg-secondary text-foreground hover:bg-foreground hover:text-background"
             }`}
           >
