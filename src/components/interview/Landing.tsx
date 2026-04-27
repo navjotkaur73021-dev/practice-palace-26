@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
+import logoMark from "@/assets/omni-prep-logo.png";
 
 type Props = { onStart: () => void; onHistory: () => void };
 
@@ -56,6 +57,15 @@ export const Landing = ({ onStart, onHistory }: Props) => {
       <main className="container relative pb-24 pt-8 md:pt-16">
         <section className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
           <div className="animate-fade-up">
+            <div className="mb-6 inline-flex items-center justify-center rounded-3xl bg-card p-4 shadow-lifted">
+              <img
+                src={logoMark}
+                alt="Poise app logo mark"
+                width={72}
+                height={72}
+                className="h-16 w-16 object-contain md:h-20 md:w-20"
+              />
+            </div>
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground shadow-soft">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
               AI Interview Practice
