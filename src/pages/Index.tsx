@@ -62,20 +62,42 @@ const Index = () => {
   useEffect(() => {
     resumeRef.current = readLastStage() ?? "landing";
 
-    // Warm the image cache for the logo (used on every screen).
+    // Warm the image cache for the logo (used on every screen). decode()
+    // ensures the bitmap is ready before first paint of subsequent screens.
     const img = new Image();
     img.src = logoImg;
+    img.decode?.().catch(() => {
+      /* ignore — fallback to lazy decode */
+    });
 
     // Eagerly fetch the chunks the user is most likely to hit next.
     void import("@/components/interview/Landing");
     void import("@/components/interview/Setup");
     void import("@/components/interview/Interview");
-    // Lower priority — fetch after a tick so it doesn't compete.
-    const t = window.setTimeout(() => {
+
+    // Lower-priority chunks — fetch when the browser is idle so they don't
+    // compete with the critical splash → landing transition.
+    const idle = (cb: () => void) => {
+      const w = window as Window & {
+        requestIdleCallback?: (cb: IdleRequestCallback) => number;
+      };
+      if (typeof w.requestIdleCallback === "function") {
+        return w.requestIdleCallback(() => cb());
+      }
+      return window.setTimeout(cb, 600);
+    };
+    const handle = idle(() => {
       void import("@/components/interview/Results");
       void import("@/components/interview/History");
-    }, 600);
-    return () => window.clearTimeout(t);
+    });
+    return () => {
+      const w = window as Window & { cancelIdleCallback?: (h: number) => void };
+      if (typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(handle as number);
+      } else {
+        window.clearTimeout(handle as number);
+      }
+    };
   }, []);
 
   // Persist resumable stage transitions.
