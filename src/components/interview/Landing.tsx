@@ -25,7 +25,7 @@ const TIPS = [
   },
 ];
 
-export const Landing = ({ onStart }: Props) => {
+export const Landing = ({ onStart, onHistory }: Props) => {
   return (
     <div className="min-h-screen bg-gradient-cream">
       <header className="container flex items-center justify-between py-6">
@@ -43,6 +43,12 @@ export const Landing = ({ onStart }: Props) => {
           >
             How it works
           </a>
+          <button
+            onClick={onHistory}
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            History
+          </button>
           <ThemeToggle />
         </div>
       </header>
