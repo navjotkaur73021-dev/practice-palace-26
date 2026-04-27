@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
 
-type Props = { onStart: () => void };
+type Props = { onStart: () => void; onHistory: () => void };
 
 const TIPS = [
   {

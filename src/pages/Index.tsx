@@ -3,14 +3,16 @@ import { Landing } from "@/components/interview/Landing";
 import { Setup } from "@/components/interview/Setup";
 import { Interview } from "@/components/interview/Interview";
 import { Results } from "@/components/interview/Results";
+import { History } from "@/components/interview/History";
 import type { Role, Language } from "@/lib/interviewData";
 
-type Stage = "landing" | "setup" | "interview" | "results";
+type Stage = "landing" | "setup" | "interview" | "results" | "history";
 
 const Index = () => {
   const [stage, setStage] = useState<Stage>("landing");
   const [role, setRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>("en");
+  const [count, setCount] = useState<number>(5);
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
 
@@ -27,13 +29,19 @@ const Index = () => {
 
   return (
     <>
-      {stage === "landing" && <Landing onStart={() => setStage("setup")} />}
+      {stage === "landing" && (
+        <Landing
+          onStart={() => setStage("setup")}
+          onHistory={() => setStage("history")}
+        />
+      )}
       {stage === "setup" && (
         <Setup
           onBack={() => setStage("landing")}
-          onStart={(r, lang) => {
+          onStart={(r, lang, c) => {
             setRole(r);
             setLanguage(lang);
+            setCount(c);
             setQuestions([]);
             setAnswers([]);
             setStage("interview");
@@ -44,6 +52,7 @@ const Index = () => {
         <Interview
           role={role}
           language={language}
+          count={count}
           onExit={() => setStage("setup")}
           onComplete={(qs, a) => {
             setQuestions(qs);
@@ -62,6 +71,7 @@ const Index = () => {
           onHome={() => setStage("landing")}
         />
       )}
+      {stage === "history" && <History onBack={() => setStage("landing")} />}
     </>
   );
 };
