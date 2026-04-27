@@ -3,16 +3,19 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ROLES, LANGUAGES, type Role, type Language } from "@/lib/interviewData";
-import { ArrowLeft, ArrowRight, Check, Languages } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Languages, Hash } from "lucide-react";
 
 type Props = {
   onBack: () => void;
-  onStart: (role: Role, language: Language) => void;
+  onStart: (role: Role, language: Language, count: number) => void;
 };
+
+const COUNTS = [3, 5, 7, 10];
 
 export const Setup = ({ onBack, onStart }: Props) => {
   const [selectedId, setSelectedId] = useState<string>(ROLES[0].id);
   const [language, setLanguage] = useState<Language>("en");
+  const [count, setCount] = useState<number>(5);
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   return (
@@ -67,6 +70,35 @@ export const Setup = ({ onBack, onStart }: Props) => {
           </div>
         </section>
 
+        {/* Question count */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Hash className="h-3.5 w-3.5" />
+            How many questions
+          </div>
+          <div className="mt-3 inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+            {COUNTS.map((c) => {
+              const active = c === count;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setCount(c)}
+                  className={`rounded-full px-5 py-2 text-sm font-medium tabular-nums transition-all ${
+                    active
+                      ? "bg-foreground text-background shadow-soft"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Approx. {Math.round((count * 90) / 60)} min of practice + scoring time.
+          </p>
+        </section>
+
         <section className="mt-10">
           <div className="grid gap-3 sm:grid-cols-2">
             {ROLES.map((r) => {
@@ -106,9 +138,9 @@ export const Setup = ({ onBack, onStart }: Props) => {
         <div className="mt-12 flex items-center justify-between gap-4 border-t border-border pt-8">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{role.title}</span> ·{" "}
-            {LANGUAGES.find((l) => l.id === language)?.native} · 90s per question
+            {LANGUAGES.find((l) => l.id === language)?.native} · {count} Qs · 90s each
           </div>
-          <Button variant="hero" size="lg" onClick={() => onStart(role, language)}>
+          <Button variant="hero" size="lg" onClick={() => onStart(role, language, count)}>
             Begin Interview
             <ArrowRight />
           </Button>
