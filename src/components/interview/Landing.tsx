@@ -76,9 +76,9 @@ export const Landing = ({ onStart, onHistory }: Props) => {
               Walk out <span className="italic">hired.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground text-balance">
-              AI-generated mock interviews tailored to your role, in English or
-              Hindi. Speak your answers aloud, beat the timer, and get instant
-              coach feedback with a stronger answer rewritten for you.
+              AI-generated mock interviews tailored to your role — in English,
+              Hindi, or Punjabi. Mix open answers with MCQs, pick a difficulty,
+              and get instant coach feedback with skill scores and personalized tips.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">

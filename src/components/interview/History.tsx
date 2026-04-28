@@ -119,7 +119,8 @@ export const History = ({ onBack }: Props) => {
                       <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
                         {date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         {" · "}
-                        {s.language === "hi" ? "Hindi" : "English"}
+                        {s.language === "hi" ? "Hindi" : s.language === "pa" ? "Punjabi" : "English"}
+                        {s.difficulty ? ` · ${s.difficulty}` : ""}
                         {" · "}
                         {s.questions.length} Qs
                       </div>
