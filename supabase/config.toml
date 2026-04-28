@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.score-answer]
 verify_jwt = false
+
+[functions.suggest-answer]
+verify_jwt = false
