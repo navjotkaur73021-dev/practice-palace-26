@@ -8,6 +8,7 @@ const corsHeaders = {
 const LANG_LABEL: Record<string, string> = {
   en: "English",
   hi: "Hindi (Devanagari script)",
+  pa: "Punjabi (Gurmukhi script)",
 };
 
 Deno.serve(async (req) => {
@@ -16,7 +17,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { roleTitle, question, answer, language = "en" } = await req.json();
+    const {
+      roleTitle,
+      question,
+      answer,
+      language = "en",
+      kind = "open",
+      options,
+      correctIndex,
+    } = await req.json();
 
     if (!question) {
       return new Response(JSON.stringify({ error: "question required" }), {
@@ -35,9 +44,29 @@ Deno.serve(async (req) => {
 
     const langLabel = LANG_LABEL[language] ?? "English";
 
-    const systemPrompt = `You are an expert interview coach. Evaluate an interview answer fairly and constructively. Always reply in ${langLabel}. Give a 0-100 score, a short critique (2-3 sentences) noting strengths and weaknesses, and an "improved" version that shows what a strong professional answer would sound like (concise, structured, ideally STAR format, 60-120 words).`;
+    // For MCQ: deterministic score + brief explanation
+    const mcqContext =
+      kind === "mcq"
+        ? `\n\nThis was a MULTIPLE CHOICE question. Options were:\n${(options ?? [])
+            .map((o: string, i: number) => `  ${i}) ${o}`)
+            .join("\n")}\nCorrect index: ${correctIndex}\nCandidate selected index: ${answer}`
+        : "";
 
-    const userPrompt = `Role: ${roleTitle ?? "general"}\nQuestion: ${question}\nCandidate answer: ${answer?.trim() ? answer : "(no answer provided)"}`;
+    const systemPrompt = `You are an expert interview coach. Evaluate the candidate's response fairly and constructively. ALWAYS reply in ${langLabel}.
+
+Return:
+- score (0-100)
+- feedback (2-3 sentences)
+- improved (a strong 60-120 word model answer in STAR or structured format)
+- skills: rate four dimensions 0-100: clarity, depth, structure, confidence
+- tip: ONE short, personalized actionable tip (max 18 words)
+${kind === "mcq" ? "For MCQ: score 100 if selected index matches correct index, else 0-30. Briefly explain why the correct option is right." : ""}`;
+
+    const userPrompt = `Role: ${roleTitle ?? "general"}\nQuestion: ${question}${mcqContext}\n${
+      kind === "mcq"
+        ? ""
+        : `Candidate answer: ${answer?.toString().trim() ? answer : "(no answer provided)"}`
+    }`;
 
     const aiRes = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -48,7 +77,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
@@ -63,10 +92,22 @@ Deno.serve(async (req) => {
                   type: "object",
                   properties: {
                     score: { type: "number", minimum: 0, maximum: 100 },
-                    feedback: { type: "string", description: "2-3 sentence critique" },
-                    improved: { type: "string", description: "Improved professional answer" },
+                    feedback: { type: "string" },
+                    improved: { type: "string" },
+                    skills: {
+                      type: "object",
+                      properties: {
+                        clarity: { type: "number", minimum: 0, maximum: 100 },
+                        depth: { type: "number", minimum: 0, maximum: 100 },
+                        structure: { type: "number", minimum: 0, maximum: 100 },
+                        confidence: { type: "number", minimum: 0, maximum: 100 },
+                      },
+                      required: ["clarity", "depth", "structure", "confidence"],
+                      additionalProperties: false,
+                    },
+                    tip: { type: "string" },
                   },
-                  required: ["score", "feedback", "improved"],
+                  required: ["score", "feedback", "improved", "skills", "tip"],
                   additionalProperties: false,
                 },
               },
@@ -105,10 +146,18 @@ Deno.serve(async (req) => {
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     const args = toolCall ? JSON.parse(toolCall.function.arguments) : {};
 
+    const skills = args.skills ?? {};
     const result = {
       score: Math.max(0, Math.min(100, Math.round(Number(args.score) || 0))),
       feedback: String(args.feedback ?? ""),
       improved: String(args.improved ?? ""),
+      skills: {
+        clarity: Math.round(Number(skills.clarity) || 0),
+        depth: Math.round(Number(skills.depth) || 0),
+        structure: Math.round(Number(skills.structure) || 0),
+        confidence: Math.round(Number(skills.confidence) || 0),
+      },
+      tip: String(args.tip ?? ""),
     };
 
     return new Response(JSON.stringify(result), {

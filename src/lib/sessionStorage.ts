@@ -1,9 +1,18 @@
-import type { Language, Role } from "./interviewData";
+import type { Difficulty, Language, QuestionFormat, Role } from "./interviewData";
+
+export type SkillScores = {
+  clarity: number;
+  depth: number;
+  structure: number;
+  confidence: number;
+};
 
 export type SavedScored = {
   score: number;
   feedback: string;
   improved: string;
+  skills?: SkillScores;
+  tip?: string;
 } | null;
 
 export type SavedSession = {
@@ -12,6 +21,8 @@ export type SavedSession = {
   roleId: string;
   roleTitle: string;
   language: Language;
+  difficulty?: Difficulty;
+  format?: QuestionFormat;
   questions: string[];
   answers: string[];
   scored: SavedScored[];
@@ -63,7 +74,8 @@ export function exportSessionMarkdown(s: SavedSession, role: Pick<Role, "title">
   lines.push(`# Poise Interview Session`);
   lines.push("");
   lines.push(`- **Role:** ${role.title}`);
-  lines.push(`- **Language:** ${s.language === "hi" ? "Hindi" : "English"}`);
+  lines.push(`- **Language:** ${s.language === "hi" ? "Hindi" : s.language === "pa" ? "Punjabi" : "English"}`);
+  if (s.difficulty) lines.push(`- **Difficulty:** ${s.difficulty}`);
   lines.push(`- **Date:** ${date}`);
   lines.push(`- **Overall score:** ${s.overall}/100`);
   lines.push("");
@@ -82,6 +94,10 @@ export function exportSessionMarkdown(s: SavedSession, role: Pick<Role, "title">
       lines.push("");
       lines.push(`**Coach feedback:** ${sc.feedback}`);
       lines.push("");
+      if (sc.tip) {
+        lines.push(`**Tip:** ${sc.tip}`);
+        lines.push("");
+      }
       if (sc.improved) {
         lines.push(`**Stronger answer:**`);
         lines.push("");

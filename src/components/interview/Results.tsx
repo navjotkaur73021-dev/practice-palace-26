@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { type Role, type Language } from "@/lib/interviewData";
+import { type Role, type Language, type Difficulty } from "@/lib/interviewData";
+import { type QuizQuestion } from "@/lib/settingsStorage";
 import { supabase } from "@/integrations/supabase/client";
 import {
   RotateCcw,
@@ -14,6 +15,10 @@ import {
   RefreshCw,
   Download,
   FileText,
+  Star,
+  Lightbulb,
+  Check,
+  X as XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,18 +27,59 @@ import {
   exportSessionMarkdown,
   downloadFile,
   type SavedScored,
+  type SkillScores,
 } from "@/lib/sessionStorage";
 
 type Props = {
   role: Role;
   language: Language;
-  questions: string[];
+  difficulty: Difficulty;
+  questions: QuizQuestion[];
   answers: string[];
   onRestart: () => void;
   onHome: () => void;
 };
 
-export const Results = ({ role, language, questions, answers, onRestart, onHome }: Props) => {
+const StarRating = ({ score, size = 4 }: { score: number; size?: number }) => {
+  const stars = Math.round((score / 100) * 5);
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={`h-${size} w-${size} ${
+            i <= stars ? "fill-accent text-accent" : "text-muted-foreground/30"
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
+const SkillBar = ({ label, value }: { label: string; value: number }) => (
+  <div>
+    <div className="mb-1 flex items-center justify-between text-xs">
+      <span className="font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="tabular-nums font-semibold">{value}</span>
+    </div>
+    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+      <div
+        className="h-full bg-gradient-warm transition-all duration-700"
+        style={{ width: `${value}%` }}
+      />
+    </div>
+  </div>
+);
+
+export const Results = ({
+  role,
+  language,
+  difficulty,
+  questions,
+  answers,
+  onRestart,
+  onHome,
+}: Props) => {
   const [scored, setScored] = useState<SavedScored[]>(() => questions.map(() => null));
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState<Record<number, boolean>>({});
@@ -41,14 +87,19 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
 
   const scoreOne = useCallback(
     async (i: number): Promise<SavedScored> => {
-      const { data, error } = await supabase.functions.invoke("score-answer", {
-        body: {
-          roleTitle: role.title,
-          question: questions[i],
-          answer: answers[i] ?? "",
-          language,
-        },
-      });
+      const q = questions[i];
+      const body: Record<string, unknown> = {
+        roleTitle: role.title,
+        question: q.text,
+        answer: answers[i] ?? "",
+        language,
+        kind: q.kind,
+      };
+      if (q.kind === "mcq") {
+        body.options = q.options;
+        body.correctIndex = q.correctIndex;
+      }
+      const { data, error } = await supabase.functions.invoke("score-answer", { body });
       if (error || !data || typeof data.score !== "number") {
         console.error("Scoring failed for Q" + (i + 1), error, data);
         return null;
@@ -58,7 +109,6 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
     [role.title, questions, answers, language],
   );
 
-  // Initial scoring + save
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -76,7 +126,8 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
         roleId: role.id,
         roleTitle: role.title,
         language,
-        questions,
+        difficulty,
+        questions: questions.map((q) => q.text),
         answers,
         scored: results,
         overall,
@@ -104,7 +155,6 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
     setScored((prev) => {
       const next = [...prev];
       next[i] = result;
-      // Persist updated session
       if (sessionIdRef.current) {
         const valid = next.filter((s): s is NonNullable<SavedScored> => !!s);
         const overall = valid.length
@@ -121,8 +171,47 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
   const overall = valid.length
     ? Math.round(valid.reduce((s, x) => s + x.score, 0) / valid.length)
     : 0;
+  const overallStars = Math.round((overall / 100) * 5);
   const best = valid.length ? Math.max(...valid.map((s) => s.score)) : 0;
   const weakest = valid.length ? Math.min(...valid.map((s) => s.score)) : 0;
+
+  // Aggregate skill scores
+  const skillAvg: SkillScores = {
+    clarity: 0,
+    depth: 0,
+    structure: 0,
+    confidence: 0,
+  };
+  const skillCount = valid.filter((s) => s.skills).length;
+  if (skillCount > 0) {
+    valid.forEach((s) => {
+      if (s.skills) {
+        skillAvg.clarity += s.skills.clarity;
+        skillAvg.depth += s.skills.depth;
+        skillAvg.structure += s.skills.structure;
+        skillAvg.confidence += s.skills.confidence;
+      }
+    });
+    skillAvg.clarity = Math.round(skillAvg.clarity / skillCount);
+    skillAvg.depth = Math.round(skillAvg.depth / skillCount);
+    skillAvg.structure = Math.round(skillAvg.structure / skillCount);
+    skillAvg.confidence = Math.round(skillAvg.confidence / skillCount);
+  }
+
+  // Personalized tips: collect unique tips from low-scoring answers, then top up
+  const personalizedTips = (() => {
+    const lowFirst = [...valid].sort((a, b) => a.score - b.score);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of lowFirst) {
+      if (v.tip && !seen.has(v.tip)) {
+        seen.add(v.tip);
+        out.push(v.tip);
+      }
+      if (out.length >= 4) break;
+    }
+    return out;
+  })();
 
   const verdict =
     overall >= 80
@@ -142,7 +231,8 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
           roleId: role.id,
           roleTitle: role.title,
           language,
-          questions,
+          difficulty,
+          questions: questions.map((q) => q.text),
           answers,
           scored,
           overall,
@@ -155,6 +245,7 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
         {
           role: { id: role.id, title: role.title },
           language,
+          difficulty,
           overall,
           questions,
           answers,
@@ -204,7 +295,7 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
       <main className="container max-w-4xl pb-24 pt-4">
         <div className="animate-fade-up text-center">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Your results · {role.title}
+            Your results · {role.title} · {difficulty}
           </span>
           <h1 className="mt-4 font-display text-5xl font-semibold tracking-tight md:text-6xl text-balance">
             {verdict.label}<span className="text-accent">.</span>
@@ -226,6 +317,17 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
               <div className="font-display text-6xl font-semibold tabular-nums">{overall}</div>
               <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">overall score</div>
             </div>
+          </div>
+
+          <div className="mt-4 flex justify-center" aria-label={`${overallStars} out of 5 stars`}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Star
+                key={i}
+                className={`h-6 w-6 ${
+                  i <= overallStars ? "fill-accent text-accent" : "text-muted-foreground/30"
+                }`}
+              />
+            ))}
           </div>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -256,6 +358,45 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
             </div>
           ))}
         </section>
+
+        {/* Skill breakdown */}
+        {skillCount > 0 && (
+          <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-accent" />
+              <h2 className="font-display text-xl font-semibold">Skill breakdown</h2>
+            </div>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <SkillBar label="Clarity" value={skillAvg.clarity} />
+              <SkillBar label="Depth" value={skillAvg.depth} />
+              <SkillBar label="Structure" value={skillAvg.structure} />
+              <SkillBar label="Confidence" value={skillAvg.confidence} />
+            </div>
+          </section>
+        )}
+
+        {/* Personalized tips */}
+        {personalizedTips.length > 0 && (
+          <section className="mt-12 rounded-3xl border border-accent/20 bg-accent/5 p-6 shadow-soft md:p-8">
+            <div className="flex items-center gap-2 text-accent">
+              <Lightbulb className="h-5 w-5" />
+              <h2 className="font-display text-xl font-semibold">Personalized tips</h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Quick wins from the answers that need the most polish.
+            </p>
+            <ul className="mt-5 grid gap-3 md:grid-cols-2">
+              {personalizedTips.map((tip, i) => (
+                <li key={i} className="flex gap-3 rounded-2xl bg-card p-4">
+                  <span className="font-display text-2xl font-semibold leading-none text-accent/50">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="text-sm leading-relaxed">{tip}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
           <div className="flex items-center gap-2">
@@ -291,6 +432,10 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
               const s = scored[i];
               const answer = answers[i] ?? "";
               const isRetrying = retrying[i];
+              const isMCQ = q.kind === "mcq";
+              const selectedIdx = isMCQ && answer !== "" ? Number(answer) : -1;
+              const correct = isMCQ && selectedIdx === q.correctIndex;
+
               return (
                 <article
                   key={i}
@@ -298,11 +443,16 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
                 >
                   <div className="flex items-start justify-between gap-6">
                     <div className="flex-1">
-                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Question {i + 1}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Question {i + 1}
+                        </span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {isMCQ ? "MCQ" : "Open"}
+                        </span>
+                      </div>
                       <h3 className="mt-1 font-display text-lg font-semibold leading-snug">
-                        {q}
+                        {q.text}
                       </h3>
                     </div>
                     <div className="text-right">
@@ -310,6 +460,11 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
                         {s?.score ?? "—"}
                         <span className="text-base text-muted-foreground">/100</span>
                       </div>
+                      {s && (
+                        <div className="mt-1 flex justify-end">
+                          <StarRating score={s.score} />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -320,10 +475,43 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
                     />
                   </div>
 
-                  {answer && (
-                    <blockquote className="mt-5 border-l-2 border-accent pl-4 text-sm italic text-muted-foreground">
-                      "{answer.length > 280 ? answer.slice(0, 280) + "…" : answer}"
-                    </blockquote>
+                  {isMCQ ? (
+                    <ul className="mt-5 space-y-2">
+                      {q.options.map((opt, oi) => {
+                        const isCorrect = oi === q.correctIndex;
+                        const isPicked = oi === selectedIdx;
+                        return (
+                          <li
+                            key={oi}
+                            className={`flex items-start gap-3 rounded-xl border p-3 text-sm ${
+                              isCorrect
+                                ? "border-accent/40 bg-accent/5"
+                                : isPicked
+                                ? "border-destructive/40 bg-destructive/5"
+                                : "border-border"
+                            }`}
+                          >
+                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-semibold">
+                              {String.fromCharCode(65 + oi)}
+                            </span>
+                            <span className="flex-1">{opt}</span>
+                            {isCorrect && <Check className="h-4 w-4 text-accent" />}
+                            {isPicked && !isCorrect && (
+                              <XIcon className="h-4 w-4 text-destructive" />
+                            )}
+                          </li>
+                        );
+                      })}
+                      {selectedIdx === -1 && (
+                        <p className="mt-1 text-xs text-muted-foreground">No option selected.</p>
+                      )}
+                    </ul>
+                  ) : (
+                    answer && (
+                      <blockquote className="mt-5 border-l-2 border-accent pl-4 text-sm italic text-muted-foreground">
+                        "{answer.length > 280 ? answer.slice(0, 280) + "…" : answer}"
+                      </blockquote>
+                    )
                   )}
 
                   {s ? (
@@ -332,7 +520,27 @@ export const Results = ({ role, language, questions, answers, onRestart, onHome 
                         <div className="text-xs font-semibold uppercase tracking-wider text-accent">Coach feedback</div>
                         <p className="mt-1 text-foreground">{s.feedback}</p>
                       </div>
-                      {s.improved && (
+
+                      {s.skills && (
+                        <div className="mt-3 grid gap-3 rounded-2xl border border-border p-4 sm:grid-cols-2">
+                          <SkillBar label="Clarity" value={s.skills.clarity} />
+                          <SkillBar label="Depth" value={s.skills.depth} />
+                          <SkillBar label="Structure" value={s.skills.structure} />
+                          <SkillBar label="Confidence" value={s.skills.confidence} />
+                        </div>
+                      )}
+
+                      {s.tip && (
+                        <div className="mt-3 flex gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-4">
+                          <Lightbulb className="h-5 w-5 shrink-0 text-accent" />
+                          <p className="text-sm text-foreground">
+                            <span className="font-semibold">Tip · </span>
+                            {s.tip}
+                          </p>
+                        </div>
+                      )}
+
+                      {s.improved && !isMCQ && (
                         <div className="mt-3 rounded-2xl border border-accent/20 bg-accent/5 p-4">
                           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
                             <Sparkles className="h-3.5 w-3.5" />

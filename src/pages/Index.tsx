@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Splash } from "@/components/interview/Splash";
 import logoImg from "@/assets/omni-prep-logo.png";
-import type { Role, Language } from "@/lib/interviewData";
+import type { Role, Language, Difficulty, QuestionFormat } from "@/lib/interviewData";
+import type { QuizQuestion } from "@/lib/settingsStorage";
 
-// Lazy-loaded route chunks so we can preload them during the splash screen.
 const Landing = lazy(() =>
   import("@/components/interview/Landing").then((m) => ({ default: m.Landing })),
 );
@@ -22,7 +22,6 @@ const HistoryView = lazy(() =>
 
 type Stage = "splash" | "landing" | "setup" | "interview" | "results" | "history";
 
-// Stages that are safe to resume on reload (not mid-interview / mid-results).
 const RESUMABLE: Stage[] = ["landing", "setup", "history"];
 const STAGE_KEY = "poise:last-stage";
 
@@ -40,13 +39,15 @@ const Index = () => {
   const [role, setRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>("en");
   const [count, setCount] = useState<number>(5);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const [format, setFormat] = useState<QuestionFormat>("mixed");
+  const [autoSkip, setAutoSkip] = useState<boolean>(true);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const resumeRef = useRef<Stage>("landing");
 
-  // SEO
   useEffect(() => {
-    document.title = "Poise — AI Interview Practice in English & Hindi";
+    document.title = "Poise — AI Interview Practice in English, Hindi & Punjabi";
     const meta =
       document.querySelector('meta[name="description"]') ??
       document.head.appendChild(
@@ -54,29 +55,21 @@ const Index = () => {
       );
     (meta as HTMLMetaElement).setAttribute(
       "content",
-      "Practice tailored AI mock interviews in English or Hindi. Speak or type your answers and get real-time feedback. No sign-up required.",
+      "Practice tailored AI mock interviews in English, Hindi or Punjabi. MCQ + open answers, difficulty levels, voice input, instant feedback. No sign-up required.",
     );
   }, []);
 
-  // Preload assets + chunk during splash; remember last resumable stage.
   useEffect(() => {
     resumeRef.current = readLastStage() ?? "landing";
 
-    // Warm the image cache for the logo (used on every screen). decode()
-    // ensures the bitmap is ready before first paint of subsequent screens.
     const img = new Image();
     img.src = logoImg;
-    img.decode?.().catch(() => {
-      /* ignore — fallback to lazy decode */
-    });
+    img.decode?.().catch(() => {});
 
-    // Eagerly fetch the chunks the user is most likely to hit next.
     void import("@/components/interview/Landing");
     void import("@/components/interview/Setup");
     void import("@/components/interview/Interview");
 
-    // Lower-priority chunks — fetch when the browser is idle so they don't
-    // compete with the critical splash → landing transition.
     const idle = (cb: () => void) => {
       const w = window as Window & {
         requestIdleCallback?: (cb: IdleRequestCallback) => number;
@@ -100,16 +93,13 @@ const Index = () => {
     };
   }, []);
 
-  // Persist resumable stage transitions.
   useEffect(() => {
     if (stage === "splash") return;
     try {
       if (RESUMABLE.includes(stage)) {
         localStorage.setItem(STAGE_KEY, stage);
       }
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }, [stage]);
 
   return (
@@ -125,10 +115,13 @@ const Index = () => {
         {stage === "setup" && (
           <Setup
             onBack={() => setStage("landing")}
-            onStart={(r, lang, c) => {
+            onStart={(r, lang, c, d, f, a) => {
               setRole(r);
               setLanguage(lang);
               setCount(c);
+              setDifficulty(d);
+              setFormat(f);
+              setAutoSkip(a);
               setQuestions([]);
               setAnswers([]);
               setStage("interview");
@@ -140,6 +133,9 @@ const Index = () => {
             role={role}
             language={language}
             count={count}
+            difficulty={difficulty}
+            format={format}
+            autoSkip={autoSkip}
             onExit={() => setStage("setup")}
             onComplete={(qs, a) => {
               setQuestions(qs);
@@ -152,6 +148,7 @@ const Index = () => {
           <Results
             role={role}
             language={language}
+            difficulty={difficulty}
             questions={questions}
             answers={answers}
             onRestart={() => setStage("interview")}
