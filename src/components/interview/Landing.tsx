@@ -40,7 +40,28 @@ const TIPS = [
   },
 ];
 
-export const Landing = ({ onStart, onHistory }: Props) => {
+export const Landing = ({ onStart, onHistory, onResume }: Props) => {
+  const [resumable, setResumable] = useState<InProgressQuiz | null>(null);
+
+  useEffect(() => {
+    setResumable(loadInProgressQuiz());
+  }, []);
+
+  const handleResume = () => {
+    if (!resumable || !onResume) return;
+    const r = ROLES.find((x) => x.id === resumable.roleId) ?? {
+      id: resumable.roleId,
+      title: resumable.roleTitle,
+      blurb: resumable.roleBlurb,
+    };
+    onResume(r as Role, resumable.language, resumable.count, resumable.difficulty, resumable.format);
+  };
+
+  const handleDiscardResume = () => {
+    clearInProgressQuiz();
+    setResumable(null);
+    toast.success("Saved session cleared.");
+  };
   return (
     <div className="min-h-screen bg-gradient-cream">
       <header className="container flex items-center justify-between py-6">
