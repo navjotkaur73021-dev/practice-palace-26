@@ -110,6 +110,17 @@ const Index = () => {
           <Landing
             onStart={() => setStage("setup")}
             onHistory={() => setStage("history")}
+            onResume={(r, lang, c, d, f) => {
+              setRole(r);
+              setLanguage(lang);
+              setCount(c);
+              setDifficulty(d);
+              setFormat(f);
+              setAutoSkip(true);
+              setQuestions([]);
+              setAnswers([]);
+              setStage("interview");
+            }}
           />
         )}
         {stage === "setup" && (

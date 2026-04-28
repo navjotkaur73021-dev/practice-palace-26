@@ -1,11 +1,25 @@
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
+import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb, PlayCircle, Trash2 } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
 import logoMark from "@/assets/omni-prep-logo.png";
+import { loadInProgressQuiz, clearInProgressQuiz, type InProgressQuiz } from "@/lib/settingsStorage";
+import { ROLES, type Role, type Language, type Difficulty, type QuestionFormat } from "@/lib/interviewData";
+import { toast } from "sonner";
 
-type Props = { onStart: () => void; onHistory: () => void };
+type Props = {
+  onStart: () => void;
+  onHistory: () => void;
+  onResume?: (
+    role: Role,
+    language: Language,
+    count: number,
+    difficulty: Difficulty,
+    format: QuestionFormat,
+  ) => void;
+};
 
 const TIPS = [
   {
@@ -26,7 +40,28 @@ const TIPS = [
   },
 ];
 
-export const Landing = ({ onStart, onHistory }: Props) => {
+export const Landing = ({ onStart, onHistory, onResume }: Props) => {
+  const [resumable, setResumable] = useState<InProgressQuiz | null>(null);
+
+  useEffect(() => {
+    setResumable(loadInProgressQuiz());
+  }, []);
+
+  const handleResume = () => {
+    if (!resumable || !onResume) return;
+    const r = ROLES.find((x) => x.id === resumable.roleId) ?? {
+      id: resumable.roleId,
+      title: resumable.roleTitle,
+      blurb: resumable.roleBlurb,
+    };
+    onResume(r as Role, resumable.language, resumable.count, resumable.difficulty, resumable.format);
+  };
+
+  const handleDiscardResume = () => {
+    clearInProgressQuiz();
+    setResumable(null);
+    toast.success("Saved session cleared.");
+  };
   return (
     <div className="min-h-screen bg-gradient-cream">
       <header className="container flex items-center justify-between py-6">
@@ -81,9 +116,35 @@ export const Landing = ({ onStart, onHistory }: Props) => {
               and get instant coach feedback with skill scores and personalized tips.
             </p>
 
+            {resumable && onResume && (
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-4 shadow-soft">
+                <div className="flex items-center gap-3">
+                  <PlayCircle className="h-5 w-5 shrink-0 text-accent" />
+                  <div className="text-sm">
+                    <div className="font-semibold">Resume your {resumable.roleTitle} session</div>
+                    <div className="text-xs text-muted-foreground">
+                      Q{resumable.index + 1} of {resumable.count} · {resumable.difficulty} · {resumable.format}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDiscardResume}
+                    className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label="Discard saved session"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Discard
+                  </button>
+                  <Button variant="hero" size="sm" onClick={handleResume}>
+                    Resume <ArrowRight />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button variant="hero" size="xl" onClick={onStart}>
-                Start Interview
+                {resumable ? "Start new interview" : "Start Interview"}
                 <ArrowRight />
               </Button>
               <span className="text-sm text-muted-foreground">
