@@ -1,11 +1,25 @@
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb } from "lucide-react";
+import { ArrowRight, Sparkles, Mic, Languages, BarChart3, Lightbulb, PlayCircle, Trash2 } from "lucide-react";
 import heroImg from "@/assets/hero-shapes.jpg";
 import logoMark from "@/assets/omni-prep-logo.png";
+import { loadInProgressQuiz, clearInProgressQuiz, type InProgressQuiz } from "@/lib/settingsStorage";
+import { ROLES, type Role, type Language, type Difficulty, type QuestionFormat } from "@/lib/interviewData";
+import { toast } from "sonner";
 
-type Props = { onStart: () => void; onHistory: () => void };
+type Props = {
+  onStart: () => void;
+  onHistory: () => void;
+  onResume?: (
+    role: Role,
+    language: Language,
+    count: number,
+    difficulty: Difficulty,
+    format: QuestionFormat,
+  ) => void;
+};
 
 const TIPS = [
   {
