@@ -174,6 +174,11 @@ const Index = () => {
         )}
         {stage === "history" && <HistoryView onBack={() => setStage("landing")} />}
       </Suspense>
+      {stage !== "splash" && (
+        <Suspense fallback={null}>
+          <CareerChat />
+        </Suspense>
+      )}
     </>
   );
 };
