@@ -46,6 +46,8 @@ const Index = () => {
   const [format, setFormat] = useState<QuestionFormat>("mixed");
   const [autoSkip, setAutoSkip] = useState<boolean>(true);
   const [personality, setPersonality] = useState<Personality>("neutral");
+  const [trickQuestions, setTrickQuestions] = useState<boolean>(false);
+  const [focusTopics, setFocusTopics] = useState<string[] | undefined>(undefined);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const resumeRef = useRef<Stage>("landing");
@@ -121,6 +123,7 @@ const Index = () => {
               setDifficulty(d);
               setFormat(f);
               setAutoSkip(true);
+              setFocusTopics(undefined);
               setQuestions([]);
               setAnswers([]);
               setStage("interview");
@@ -130,7 +133,7 @@ const Index = () => {
         {stage === "setup" && (
           <Setup
             onBack={() => setStage("landing")}
-            onStart={(r, lang, c, d, f, a, p) => {
+            onStart={(r, lang, c, d, f, a, p, t) => {
               setRole(r);
               setLanguage(lang);
               setCount(c);
@@ -138,6 +141,8 @@ const Index = () => {
               setFormat(f);
               setAutoSkip(a);
               setPersonality(p);
+              setTrickQuestions(t);
+              setFocusTopics(undefined);
               setQuestions([]);
               setAnswers([]);
               setStage("interview");
@@ -153,6 +158,8 @@ const Index = () => {
             format={format}
             autoSkip={autoSkip}
             personality={personality}
+            trickQuestions={trickQuestions}
+            focusTopics={focusTopics}
             onExit={() => setStage("setup")}
             onComplete={(qs, a) => {
               setQuestions(qs);
@@ -168,7 +175,17 @@ const Index = () => {
             difficulty={difficulty}
             questions={questions}
             answers={answers}
-            onRestart={() => setStage("interview")}
+            onRestart={() => {
+              setFocusTopics(undefined);
+              setStage("interview");
+            }}
+            onAdaptiveRevision={(topics) => {
+              setFocusTopics(topics);
+              setQuestions([]);
+              setAnswers([]);
+              // ensure new questions are fetched (no stale cache match)
+              setStage("interview");
+            }}
             onHome={() => setStage("landing")}
           />
         )}
