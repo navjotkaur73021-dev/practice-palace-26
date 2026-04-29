@@ -218,6 +218,40 @@ export const Results = ({
     return out;
   })();
 
+  // ====== Weak Topic Detection Engine ======
+  // Aggregate scores by topic. Prefer scored.topic, fall back to question.topic, else "General".
+  type TopicAgg = { topic: string; total: number; count: number; avg: number; qIndices: number[] };
+  const topicMap = new Map<string, TopicAgg>();
+  scored.forEach((s, i) => {
+    const q = questions[i];
+    const topic =
+      (s?.topic && s.topic.trim()) ||
+      ((q && "topic" in q && q.topic) ? (q as { topic?: string }).topic! : "General");
+    const score = s?.score ?? 0;
+    const key = topic.trim();
+    const cur = topicMap.get(key) ?? { topic: key, total: 0, count: 0, avg: 0, qIndices: [] };
+    cur.total += score;
+    cur.count += 1;
+    cur.qIndices.push(i);
+    topicMap.set(key, cur);
+  });
+  const topics: TopicAgg[] = Array.from(topicMap.values()).map((t) => ({
+    ...t,
+    avg: t.count ? Math.round(t.total / t.count) : 0,
+  }));
+  const sortedTopicsByScore = [...topics].sort((a, b) => a.avg - b.avg);
+  const weakTopics = sortedTopicsByScore.filter((t) => t.avg < 70).slice(0, 5);
+  const strongTopics = [...topics].sort((a, b) => b.avg - a.avg).slice(0, 3);
+
+  const heatColor = (v: number) => {
+    // 0 -> destructive, 50 -> muted, 100 -> accent
+    if (v >= 80) return "bg-accent text-accent-foreground";
+    if (v >= 65) return "bg-accent/60 text-accent-foreground";
+    if (v >= 50) return "bg-accent/30 text-foreground";
+    if (v >= 30) return "bg-destructive/40 text-foreground";
+    return "bg-destructive/70 text-destructive-foreground";
+  };
+
   // Interview readiness: weighted blend of overall score, skill consistency, completion.
   const completionRate =
     questions.length > 0
