@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       count = 5,
       difficulty = "medium",
       format = "mixed", // "open" | "mcq" | "mixed"
+      personality = "neutral", // "friendly" | "neutral" | "strict"
     } = await req.json();
 
     if (!roleTitle || typeof roleTitle !== "string") {
@@ -50,6 +51,13 @@ Deno.serve(async (req) => {
     const langLabel = LANG_LABEL[language] ?? "English";
     const diffHint = DIFFICULTY_HINT[difficulty] ?? DIFFICULTY_HINT.medium;
 
+    const personalityHint: Record<string, string> = {
+      friendly: "Phrase questions in a warm, encouraging tone. Use approachable language and prefer scenario-based prompts.",
+      neutral: "Use a balanced, professional tone — clear and objective.",
+      strict: "Phrase questions like a tough FAANG / panel interviewer. Be direct, probing, and challenge assumptions.",
+    };
+    const persHint = personalityHint[personality] ?? personalityHint.neutral;
+
     const formatInstruction =
       format === "mcq"
         ? `Generate ALL questions as multiple-choice with exactly 4 plausible options. Mark the index of the correct answer (0-3).`
@@ -57,9 +65,9 @@ Deno.serve(async (req) => {
         ? `Generate ALL questions as open-ended interview questions (no multiple choice).`
         : `Generate a balanced mix: roughly half open-ended interview questions and half multiple-choice questions (4 options each, mark the correct index 0-3).`;
 
-    const systemPrompt = `You are a senior interview coach generating realistic mock interview questions. Write ALL content in ${langLabel} (questions, options, everything). Difficulty: ${diffHint} ${formatInstruction} Open questions should be answerable in 60-120 seconds. MCQ options should be plausible and distinct.`;
+    const systemPrompt = `You are a senior interview coach generating realistic mock interview questions. Write ALL content in ${langLabel} (questions, options, everything). Difficulty: ${diffHint} Interviewer style: ${persHint} ${formatInstruction} Open questions should be answerable in 60-120 seconds. MCQ options should be plausible and distinct.`;
 
-    const userPrompt = `Role: ${roleTitle}\nFocus: ${roleBlurb ?? ""}\nDifficulty: ${difficulty}\nFormat: ${format}\nGenerate exactly ${count} questions in ${langLabel}.`;
+    const userPrompt = `Role: ${roleTitle}\nFocus: ${roleBlurb ?? ""}\nDifficulty: ${difficulty}\nPersonality: ${personality}\nFormat: ${format}\nGenerate exactly ${count} questions in ${langLabel}.`;
 
     const aiRes = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

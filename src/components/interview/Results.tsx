@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Check,
   X as XIcon,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -213,6 +214,32 @@ export const Results = ({
     return out;
   })();
 
+  // Interview readiness: weighted blend of overall score, skill consistency, completion.
+  const completionRate =
+    questions.length > 0
+      ? Math.round(
+          (answers.filter((a) => a && a.toString().trim().length > 0).length /
+            questions.length) *
+            100,
+        )
+      : 0;
+  const skillBlend =
+    skillCount > 0
+      ? Math.round(
+          (skillAvg.clarity + skillAvg.depth + skillAvg.structure + skillAvg.confidence) / 4,
+        )
+      : overall;
+  const readiness = Math.max(
+    0,
+    Math.min(100, Math.round(overall * 0.55 + skillBlend * 0.3 + completionRate * 0.15)),
+  );
+  const readinessBand =
+    readiness >= 80
+      ? { label: "Interview-ready", tone: "text-accent" }
+      : readiness >= 60
+      ? { label: "Almost there", tone: "text-foreground" }
+      : { label: "Needs more practice", tone: "text-muted-foreground" };
+
   const verdict =
     overall >= 80
       ? { label: "Interview-ready" }
@@ -357,6 +384,43 @@ export const Results = ({
               </div>
             </div>
           ))}
+        </section>
+
+        {/* Interview Readiness Score */}
+        <section className="mt-12 overflow-hidden rounded-3xl border border-accent/20 bg-gradient-warm p-6 shadow-coral md:p-8">
+          <div className="grid items-center gap-6 md:grid-cols-[auto_1fr]">
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-24 w-24 items-center justify-center">
+                <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90">
+                  <circle cx="60" cy="60" r="50" stroke="hsl(var(--background) / 0.3)" strokeWidth="10" fill="none" />
+                  <circle
+                    cx="60" cy="60" r="50"
+                    stroke="hsl(var(--background))"
+                    strokeWidth="10" fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(readiness / 100) * 314.16} 314.16`}
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                <div className="text-center text-background">
+                  <div className="font-display text-2xl font-semibold tabular-nums leading-none">{readiness}</div>
+                  <div className="mt-0.5 text-[9px] uppercase tracking-wider opacity-80">/ 100</div>
+                </div>
+              </div>
+            </div>
+            <div className="text-background">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider opacity-80">
+                <Target className="h-3.5 w-3.5" />
+                Interview readiness
+              </div>
+              <h2 className="mt-2 font-display text-2xl font-semibold leading-tight md:text-3xl">
+                {readinessBand.label}
+              </h2>
+              <p className="mt-1 text-sm opacity-90">
+                Composite of answer quality ({overall}), skill depth ({skillBlend}), and completion ({completionRate}%).
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Skill breakdown */}

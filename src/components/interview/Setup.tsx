@@ -6,10 +6,12 @@ import {
   ROLES,
   LANGUAGES,
   DIFFICULTIES,
+  PERSONALITIES,
   type Role,
   type Language,
   type Difficulty,
   type QuestionFormat,
+  type Personality,
 } from "@/lib/interviewData";
 import { loadSetupSettings, saveSetupSettings } from "@/lib/settingsStorage";
 import {
@@ -21,6 +23,7 @@ import {
   Gauge,
   ListChecks,
   SkipForward,
+  Drama,
 } from "lucide-react";
 
 type Props = {
@@ -32,6 +35,7 @@ type Props = {
     difficulty: Difficulty,
     format: QuestionFormat,
     autoSkip: boolean,
+    personality: Personality,
   ) => void;
 };
 
@@ -56,6 +60,10 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const initialFormat: QuestionFormat =
     saved.format === "open" || saved.format === "mcq" ? saved.format : "mixed";
   const initialAutoSkip = saved.autoSkip ?? true;
+  const initialPersonality: Personality =
+    saved.personality === "friendly" || saved.personality === "strict"
+      ? saved.personality
+      : "neutral";
 
   const [selectedId, setSelectedId] = useState<string>(initialId);
   const [language, setLanguage] = useState<Language>(initialLang);
@@ -63,11 +71,12 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [format, setFormat] = useState<QuestionFormat>(initialFormat);
   const [autoSkip, setAutoSkip] = useState<boolean>(initialAutoSkip);
+  const [personality, setPersonality] = useState<Personality>(initialPersonality);
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   useEffect(() => {
-    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip });
-  }, [selectedId, language, count, difficulty, format, autoSkip]);
+    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality });
+  }, [selectedId, language, count, difficulty, format, autoSkip, personality]);
 
   const Pill = ({
     active,
@@ -152,6 +161,36 @@ export const Setup = ({ onBack, onStart }: Props) => {
                 >
                   <div className="font-display text-base font-semibold">{d.label}</div>
                   <div className="mt-1 text-xs text-muted-foreground">{d.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Personality */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Drama className="h-3.5 w-3.5" />
+            Interviewer personality
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            {PERSONALITIES.map((p) => {
+              const active = p.id === personality;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPersonality(p.id)}
+                  className={`rounded-2xl border p-4 text-left transition-all ${
+                    active
+                      ? "border-accent bg-card shadow-coral"
+                      : "border-border bg-card hover:border-foreground/20"
+                  }`}
+                >
+                  <div className="font-display text-base font-semibold">
+                    <span className="mr-1.5">{p.emoji}</span>
+                    {p.label}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{p.hint}</div>
                 </button>
               );
             })}
@@ -272,13 +311,13 @@ export const Setup = ({ onBack, onStart }: Props) => {
         <div className="sticky bottom-4 mt-12 rounded-3xl border border-border bg-card/90 p-4 shadow-lifted backdrop-blur-md md:flex md:items-center md:justify-between md:gap-4">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{role.title}</span> ·{" "}
-            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {format} · {count} Qs
+            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {personality} · {format} · {count} Qs
           </div>
           <Button
             variant="hero"
             size="lg"
             className="mt-3 w-full md:mt-0 md:w-auto"
-            onClick={() => onStart(role, language, count, difficulty, format, autoSkip)}
+            onClick={() => onStart(role, language, count, difficulty, format, autoSkip, personality)}
           >
             Begin Interview
             <ArrowRight />

@@ -8,6 +8,7 @@ import {
   type Role,
   type Difficulty,
   type QuestionFormat,
+  type Personality,
 } from "@/lib/interviewData";
 import {
   type QuizQuestion,
@@ -27,6 +28,7 @@ import {
   AlertCircle,
   Sparkles,
   SkipForward,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +39,7 @@ type Props = {
   difficulty: Difficulty;
   format: QuestionFormat;
   autoSkip: boolean;
+  personality: Personality;
   onExit: () => void;
   onComplete: (questions: QuizQuestion[], answers: string[]) => void;
 };
@@ -50,6 +53,7 @@ export const Interview = ({
   difficulty,
   format,
   autoSkip,
+  personality,
   onExit,
   onComplete,
 }: Props) => {
@@ -60,6 +64,8 @@ export const Interview = ({
   const [text, setText] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
   const [suggesting, setSuggesting] = useState(false);
+  const [hinting, setHinting] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const [resumed, setResumed] = useState(false);
   const speechLang = LANGUAGES.find((l) => l.id === language)?.speechLang ?? "en-US";
   const sr = useSpeechRecognition(speechLang);
@@ -98,6 +104,7 @@ export const Interview = ({
           count,
           difficulty,
           format,
+          personality,
         },
       });
       if (cancelled) return;
@@ -118,6 +125,7 @@ export const Interview = ({
         language,
         difficulty,
         format,
+        personality,
         count,
         questions: qs,
         answers: qs.map(() => ""),
@@ -128,7 +136,7 @@ export const Interview = ({
     return () => {
       cancelled = true;
     };
-  }, [role.id, role.title, role.blurb, language, count, difficulty, format]);
+  }, [role.id, role.title, role.blurb, language, count, difficulty, format, personality]);
 
   const question = questions[index];
   const total = questions.length;
@@ -146,9 +154,10 @@ export const Interview = ({
     if (sr.error) toast.error(sr.error);
   }, [sr.error]);
 
-  // Reset timer per question
+  // Reset timer + hint per question
   useEffect(() => {
     setSecondsLeft(QUESTION_SECONDS);
+    setHint(null);
   }, [index]);
 
   // Tick
@@ -181,6 +190,7 @@ export const Interview = ({
       language,
       difficulty,
       format,
+      personality,
       count,
       questions,
       answers,
@@ -240,6 +250,25 @@ export const Interview = ({
     setText(data.suggestion);
     sr.reset(data.suggestion);
     toast.success("Sample answer inserted — edit it to make it yours.");
+  };
+
+  const handleHint = async () => {
+    if (!question) return;
+    setHinting(true);
+    const { data, error } = await supabase.functions.invoke("hint-answer", {
+      body: {
+        roleTitle: role.title,
+        question: question.text,
+        language,
+        draft: text,
+      },
+    });
+    setHinting(false);
+    if (error || !data?.hint) {
+      toast.error(data?.error || "Couldn't fetch a hint.");
+      return;
+    }
+    setHint(data.hint);
   };
 
   const persistAnswer = (val: string) => {
@@ -458,6 +487,19 @@ export const Interview = ({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
+                    onClick={handleHint}
+                    disabled={hinting}
+                    className="flex items-center gap-1.5 rounded-full border border-foreground/20 bg-card px-3 py-1 transition-colors hover:bg-secondary disabled:opacity-50"
+                  >
+                    {hinting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Lightbulb className="h-3 w-3" />
+                    )}
+                    Hint
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleSuggest}
                     disabled={suggesting}
                     className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
@@ -486,6 +528,17 @@ export const Interview = ({
                   )}
                 </div>
               </div>
+              {hint && (
+                <div className="mt-4 rounded-2xl border border-foreground/10 bg-secondary/50 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Lightbulb className="h-3.5 w-3.5 text-accent" />
+                    Coach hint
+                  </div>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                    {hint}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>
