@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Check,
   X as XIcon,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -212,6 +213,32 @@ export const Results = ({
     }
     return out;
   })();
+
+  // Interview readiness: weighted blend of overall score, skill consistency, completion.
+  const completionRate =
+    questions.length > 0
+      ? Math.round(
+          (answers.filter((a) => a && a.toString().trim().length > 0).length /
+            questions.length) *
+            100,
+        )
+      : 0;
+  const skillBlend =
+    skillCount > 0
+      ? Math.round(
+          (skillAvg.clarity + skillAvg.depth + skillAvg.structure + skillAvg.confidence) / 4,
+        )
+      : overall;
+  const readiness = Math.max(
+    0,
+    Math.min(100, Math.round(overall * 0.55 + skillBlend * 0.3 + completionRate * 0.15)),
+  );
+  const readinessBand =
+    readiness >= 80
+      ? { label: "Interview-ready", tone: "text-accent" }
+      : readiness >= 60
+      ? { label: "Almost there", tone: "text-foreground" }
+      : { label: "Needs more practice", tone: "text-muted-foreground" };
 
   const verdict =
     overall >= 80
