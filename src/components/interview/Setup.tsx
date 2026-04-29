@@ -167,6 +167,36 @@ export const Setup = ({ onBack, onStart }: Props) => {
           </div>
         </section>
 
+        {/* Personality */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Drama className="h-3.5 w-3.5" />
+            Interviewer personality
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            {PERSONALITIES.map((p) => {
+              const active = p.id === personality;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPersonality(p.id)}
+                  className={`rounded-2xl border p-4 text-left transition-all ${
+                    active
+                      ? "border-accent bg-card shadow-coral"
+                      : "border-border bg-card hover:border-foreground/20"
+                  }`}
+                >
+                  <div className="font-display text-base font-semibold">
+                    <span className="mr-1.5">{p.emoji}</span>
+                    {p.label}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{p.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Format */}
         <section className="mt-8">
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
