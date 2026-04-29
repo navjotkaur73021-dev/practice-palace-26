@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.suggest-answer]
 verify_jwt = false
+
+[functions.hint-answer]
+verify_jwt = false
+
+[functions.career-chat]
+verify_jwt = false
