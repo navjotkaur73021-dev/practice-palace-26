@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -143,13 +144,31 @@ export const CareerChat = () => {
                 <div className="text-[11px] text-muted-foreground">Ask anything · EN / HI / PA</div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              aria-label="Close chat"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  if (loading) return;
+                  setMessages([]);
+                  try {
+                    localStorage.removeItem(STORAGE_KEY);
+                  } catch { /* ignore */ }
+                  toast.success("Chat reset.");
+                }}
+                disabled={loading || messages.length === 0}
+                className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-40"
+                aria-label="Reset chat"
+                title="Reset chat"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                aria-label="Close chat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </header>
 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
