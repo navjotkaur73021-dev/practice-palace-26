@@ -8,6 +8,7 @@ import {
   type Role,
   type Difficulty,
   type QuestionFormat,
+  type Personality,
 } from "@/lib/interviewData";
 import {
   type QuizQuestion,
@@ -27,6 +28,7 @@ import {
   AlertCircle,
   Sparkles,
   SkipForward,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +39,7 @@ type Props = {
   difficulty: Difficulty;
   format: QuestionFormat;
   autoSkip: boolean;
+  personality: Personality;
   onExit: () => void;
   onComplete: (questions: QuizQuestion[], answers: string[]) => void;
 };
@@ -50,6 +53,7 @@ export const Interview = ({
   difficulty,
   format,
   autoSkip,
+  personality,
   onExit,
   onComplete,
 }: Props) => {
@@ -60,6 +64,8 @@ export const Interview = ({
   const [text, setText] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
   const [suggesting, setSuggesting] = useState(false);
+  const [hinting, setHinting] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const [resumed, setResumed] = useState(false);
   const speechLang = LANGUAGES.find((l) => l.id === language)?.speechLang ?? "en-US";
   const sr = useSpeechRecognition(speechLang);
