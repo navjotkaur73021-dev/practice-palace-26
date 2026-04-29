@@ -24,6 +24,7 @@ import {
   ListChecks,
   SkipForward,
   Drama,
+  Zap,
 } from "lucide-react";
 
 type Props = {
@@ -36,6 +37,7 @@ type Props = {
     format: QuestionFormat,
     autoSkip: boolean,
     personality: Personality,
+    trickQuestions: boolean,
   ) => void;
 };
 
@@ -64,6 +66,7 @@ export const Setup = ({ onBack, onStart }: Props) => {
     saved.personality === "friendly" || saved.personality === "strict"
       ? saved.personality
       : "neutral";
+  const initialTrick = saved.trickQuestions ?? false;
 
   const [selectedId, setSelectedId] = useState<string>(initialId);
   const [language, setLanguage] = useState<Language>(initialLang);
@@ -72,11 +75,12 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const [format, setFormat] = useState<QuestionFormat>(initialFormat);
   const [autoSkip, setAutoSkip] = useState<boolean>(initialAutoSkip);
   const [personality, setPersonality] = useState<Personality>(initialPersonality);
+  const [trickQuestions, setTrickQuestions] = useState<boolean>(initialTrick);
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   useEffect(() => {
-    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality });
-  }, [selectedId, language, count, difficulty, format, autoSkip, personality]);
+    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality, trickQuestions });
+  }, [selectedId, language, count, difficulty, format, autoSkip, personality, trickQuestions]);
 
   const Pill = ({
     active,
