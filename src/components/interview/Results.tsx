@@ -20,6 +20,8 @@ import {
   Check,
   X as XIcon,
   Target,
+  Flame,
+  Grid3x3,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,6 +41,7 @@ type Props = {
   answers: string[];
   onRestart: () => void;
   onHome: () => void;
+  onAdaptiveRevision?: (weakTopics: string[]) => void;
 };
 
 const StarRating = ({ score, size = 4 }: { score: number; size?: number }) => {
@@ -80,6 +83,7 @@ export const Results = ({
   answers,
   onRestart,
   onHome,
+  onAdaptiveRevision,
 }: Props) => {
   const [scored, setScored] = useState<SavedScored[]>(() => questions.map(() => null));
   const [loading, setLoading] = useState(true);
