@@ -500,6 +500,102 @@ export const Results = ({
           </section>
         )}
 
+        {/* Topic Heatmap */}
+        {topics.length > 0 && (
+          <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Grid3x3 className="h-5 w-5 text-accent" />
+                <h2 className="font-display text-xl font-semibold">Topic heatmap</h2>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Hot = strong · Cool = weak
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Average score by topic across this session.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {topics.map((t) => (
+                <div
+                  key={t.topic}
+                  className={`rounded-2xl p-4 transition-transform hover:scale-[1.02] ${heatColor(t.avg)}`}
+                  title={`${t.topic}: ${t.avg}/100 across ${t.count} question${t.count > 1 ? "s" : ""}`}
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
+                    {t.count} Q{t.count > 1 ? "s" : ""}
+                  </div>
+                  <div className="mt-1 truncate font-display text-sm font-semibold">
+                    {t.topic}
+                  </div>
+                  <div className="mt-2 font-display text-2xl font-semibold tabular-nums">
+                    {t.avg}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {strongTopics.length > 0 && (
+              <p className="mt-4 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">Strongest:</span>{" "}
+                {strongTopics.map((t) => `${t.topic} (${t.avg})`).join(" · ")}
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* Weak Topic Detection + Adaptive Revision */}
+        {weakTopics.length > 0 && (
+          <section className="mt-12 overflow-hidden rounded-3xl border border-destructive/20 bg-card p-6 shadow-soft md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-destructive" />
+                <h2 className="font-display text-xl font-semibold">Weak topics detected</h2>
+              </div>
+              {onAdaptiveRevision && (
+                <Button
+                  variant="hero"
+                  size="sm"
+                  onClick={() => onAdaptiveRevision(weakTopics.map((t) => t.topic))}
+                >
+                  <Sparkles /> Start adaptive revision
+                </Button>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Re-quiz yourself with new questions focused on these gaps.
+            </p>
+            <ul className="mt-5 space-y-3">
+              {weakTopics.map((t) => (
+                <li
+                  key={t.topic}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/40 p-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-base font-semibold truncate">
+                        {t.topic}
+                      </span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t.count} Q{t.count > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full bg-destructive/70 transition-all duration-700"
+                        style={{ width: `${t.avg}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-display text-2xl font-semibold tabular-nums">{t.avg}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">avg</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-accent" />
