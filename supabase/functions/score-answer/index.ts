@@ -60,6 +60,7 @@ Return:
 - improved (a strong 60-120 word model answer in STAR or structured format)
 - skills: rate four dimensions 0-100: clarity, depth, structure, confidence
 - tip: ONE short, personalized actionable tip (max 18 words)
+- topic: ONE concise topic/skill tag (1-3 words, English, Title Case) categorizing what this question tests (e.g. "System Design", "SQL Joins", "Behavioral", "Data Structures", "Leadership", "Banking Awareness"). Use consistent canonical names.
 ${kind === "mcq" ? "For MCQ: score 100 if selected index matches correct index, else 0-30. Briefly explain why the correct option is right." : ""}`;
 
     const userPrompt = `Role: ${roleTitle ?? "general"}\nQuestion: ${question}${mcqContext}\n${
@@ -106,8 +107,9 @@ ${kind === "mcq" ? "For MCQ: score 100 if selected index matches correct index, 
                       additionalProperties: false,
                     },
                     tip: { type: "string" },
+                    topic: { type: "string", description: "Concise 1-3 word topic tag in English Title Case" },
                   },
-                  required: ["score", "feedback", "improved", "skills", "tip"],
+                  required: ["score", "feedback", "improved", "skills", "tip", "topic"],
                   additionalProperties: false,
                 },
               },
@@ -158,6 +160,7 @@ ${kind === "mcq" ? "For MCQ: score 100 if selected index matches correct index, 
         confidence: Math.round(Number(skills.confidence) || 0),
       },
       tip: String(args.tip ?? ""),
+      topic: String(args.topic ?? "General").trim().slice(0, 40) || "General",
     };
 
     return new Response(JSON.stringify(result), {

@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
       difficulty = "medium",
       format = "mixed", // "open" | "mcq" | "mixed"
       personality = "neutral", // "friendly" | "neutral" | "strict"
+      trickQuestions = false,
+      focusTopics = [],
     } = await req.json();
 
     if (!roleTitle || typeof roleTitle !== "string") {
@@ -65,9 +67,17 @@ Deno.serve(async (req) => {
         ? `Generate ALL questions as open-ended interview questions (no multiple choice).`
         : `Generate a balanced mix: roughly half open-ended interview questions and half multiple-choice questions (4 options each, mark the correct index 0-3).`;
 
-    const systemPrompt = `You are a senior interview coach generating realistic mock interview questions. Write ALL content in ${langLabel} (questions, options, everything). Difficulty: ${diffHint} Interviewer style: ${persHint} ${formatInstruction} Open questions should be answerable in 60-120 seconds. MCQ options should be plausible and distinct.`;
+    const trickHint = trickQuestions
+      ? "Include 1-2 subtle TRICK / curveball questions with common misconceptions, ambiguous wording, or counter-intuitive answers — they should still be fair and answerable, but designed to catch lazy thinking."
+      : "Avoid intentionally tricky or misleading phrasing.";
 
-    const userPrompt = `Role: ${roleTitle}\nFocus: ${roleBlurb ?? ""}\nDifficulty: ${difficulty}\nPersonality: ${personality}\nFormat: ${format}\nGenerate exactly ${count} questions in ${langLabel}.`;
+    const focusHint = Array.isArray(focusTopics) && focusTopics.length > 0
+      ? `IMPORTANT — REVISION MODE: Focus all questions on these weak topics the candidate struggled with previously: ${focusTopics.join(", ")}. Drill these specifically.`
+      : "";
+
+    const systemPrompt = `You are a senior interview coach generating realistic mock interview questions. Write ALL content in ${langLabel} (questions, options, everything). Difficulty: ${diffHint} Interviewer style: ${persHint} ${formatInstruction} ${trickHint} ${focusHint} Open questions should be answerable in 60-120 seconds. MCQ options should be plausible and distinct. For each question also assign a concise 1-3 word "topic" tag in English Title Case (e.g. "SQL Joins", "System Design", "Behavioral").`;
+
+    const userPrompt = `Role: ${roleTitle}\nFocus: ${roleBlurb ?? ""}\nDifficulty: ${difficulty}\nPersonality: ${personality}\nFormat: ${format}\nTrick mode: ${trickQuestions}\nFocus topics: ${focusTopics?.join(", ") || "(none)"}\nGenerate exactly ${count} questions in ${langLabel}.`;
 
     const aiRes = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -110,8 +120,12 @@ Deno.serve(async (req) => {
                             type: "number",
                             description: "Required when kind is mcq. Index 0-3.",
                           },
+                          topic: {
+                            type: "string",
+                            description: "Short 1-3 word topic tag, English Title Case",
+                          },
                         },
-                        required: ["kind", "text"],
+                        required: ["kind", "text", "topic"],
                       },
                     },
                   },
@@ -159,6 +173,7 @@ Deno.serve(async (req) => {
     const questions = raw
       .map((q) => {
         if (!q || typeof q.text !== "string") return null;
+        const topic = (typeof q.topic === "string" && q.topic.trim()) ? q.topic.trim().slice(0, 40) : "General";
         if (q.kind === "mcq") {
           const opts = Array.isArray(q.options) ? q.options.map(String).slice(0, 4) : [];
           while (opts.length < 4) opts.push("—");
@@ -168,9 +183,9 @@ Deno.serve(async (req) => {
             q.correctIndex < 4
               ? q.correctIndex
               : 0;
-          return { kind: "mcq", text: q.text, options: opts, correctIndex: ci };
+          return { kind: "mcq", text: q.text, options: opts, correctIndex: ci, topic };
         }
-        return { kind: "open", text: q.text };
+        return { kind: "open", text: q.text, topic };
       })
       .filter(Boolean);
 

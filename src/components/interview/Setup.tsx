@@ -24,6 +24,7 @@ import {
   ListChecks,
   SkipForward,
   Drama,
+  Zap,
 } from "lucide-react";
 
 type Props = {
@@ -36,6 +37,7 @@ type Props = {
     format: QuestionFormat,
     autoSkip: boolean,
     personality: Personality,
+    trickQuestions: boolean,
   ) => void;
 };
 
@@ -64,6 +66,7 @@ export const Setup = ({ onBack, onStart }: Props) => {
     saved.personality === "friendly" || saved.personality === "strict"
       ? saved.personality
       : "neutral";
+  const initialTrick = saved.trickQuestions ?? false;
 
   const [selectedId, setSelectedId] = useState<string>(initialId);
   const [language, setLanguage] = useState<Language>(initialLang);
@@ -72,11 +75,12 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const [format, setFormat] = useState<QuestionFormat>(initialFormat);
   const [autoSkip, setAutoSkip] = useState<boolean>(initialAutoSkip);
   const [personality, setPersonality] = useState<Personality>(initialPersonality);
+  const [trickQuestions, setTrickQuestions] = useState<boolean>(initialTrick);
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   useEffect(() => {
-    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality });
-  }, [selectedId, language, count, difficulty, format, autoSkip, personality]);
+    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality, trickQuestions });
+  }, [selectedId, language, count, difficulty, format, autoSkip, personality, trickQuestions]);
 
   const Pill = ({
     active,
@@ -243,14 +247,14 @@ export const Setup = ({ onBack, onStart }: Props) => {
         </section>
 
         {/* Auto-skip */}
-        <section className="mt-8">
+        <section className="mt-8 grid gap-3 sm:grid-cols-2">
           <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft">
             <div className="flex items-center gap-3">
               <SkipForward className="h-5 w-5 text-accent" />
               <div>
-                <div className="font-display text-base font-semibold">Auto-skip when timer ends</div>
+                <div className="font-display text-base font-semibold">Auto-skip</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Move to the next question automatically.
+                  Move on when timer ends.
                 </div>
               </div>
             </div>
@@ -266,6 +270,33 @@ export const Setup = ({ onBack, onStart }: Props) => {
               <span
                 className={`absolute top-0.5 h-6 w-6 rounded-full bg-background shadow-soft transition-transform ${
                   autoSkip ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </label>
+
+          <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <div className="flex items-center gap-3">
+              <Zap className="h-5 w-5 text-accent" />
+              <div>
+                <div className="font-display text-base font-semibold">Trick questions</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Add curveballs &amp; gotchas.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTrickQuestions((v) => !v)}
+              role="switch"
+              aria-checked={trickQuestions}
+              className={`relative h-7 w-12 rounded-full transition-colors ${
+                trickQuestions ? "bg-accent" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-6 w-6 rounded-full bg-background shadow-soft transition-transform ${
+                  trickQuestions ? "translate-x-5" : "translate-x-0.5"
                 }`}
               />
             </button>
@@ -311,13 +342,13 @@ export const Setup = ({ onBack, onStart }: Props) => {
         <div className="sticky bottom-4 mt-12 rounded-3xl border border-border bg-card/90 p-4 shadow-lifted backdrop-blur-md md:flex md:items-center md:justify-between md:gap-4">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{role.title}</span> ·{" "}
-            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {personality} · {format} · {count} Qs
+            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {personality} · {format} · {count} Qs{trickQuestions ? " · 🎯 trick" : ""}
           </div>
           <Button
             variant="hero"
             size="lg"
             className="mt-3 w-full md:mt-0 md:w-auto"
-            onClick={() => onStart(role, language, count, difficulty, format, autoSkip, personality)}
+            onClick={() => onStart(role, language, count, difficulty, format, autoSkip, personality, trickQuestions)}
           >
             Begin Interview
             <ArrowRight />
