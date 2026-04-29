@@ -270,6 +270,8 @@ export const Interview = ({
     }
     setHint(data.hint);
   };
+
+  const persistAnswer = (val: string) => {
     setAnswers((prev) => {
       const next = [...prev];
       next[index] = val;
