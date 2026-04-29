@@ -104,6 +104,7 @@ export const Interview = ({
           count,
           difficulty,
           format,
+          personality,
         },
       });
       if (cancelled) return;
@@ -135,7 +136,7 @@ export const Interview = ({
     return () => {
       cancelled = true;
     };
-  }, [role.id, role.title, role.blurb, language, count, difficulty, format]);
+  }, [role.id, role.title, role.blurb, language, count, difficulty, format, personality]);
 
   const question = questions[index];
   const total = questions.length;
@@ -153,9 +154,10 @@ export const Interview = ({
     if (sr.error) toast.error(sr.error);
   }, [sr.error]);
 
-  // Reset timer per question
+  // Reset timer + hint per question
   useEffect(() => {
     setSecondsLeft(QUESTION_SECONDS);
+    setHint(null);
   }, [index]);
 
   // Tick
