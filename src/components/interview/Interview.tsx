@@ -487,6 +487,19 @@ export const Interview = ({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
+                    onClick={handleHint}
+                    disabled={hinting}
+                    className="flex items-center gap-1.5 rounded-full border border-foreground/20 bg-card px-3 py-1 transition-colors hover:bg-secondary disabled:opacity-50"
+                  >
+                    {hinting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Lightbulb className="h-3 w-3" />
+                    )}
+                    Hint
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleSuggest}
                     disabled={suggesting}
                     className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
@@ -515,6 +528,17 @@ export const Interview = ({
                   )}
                 </div>
               </div>
+              {hint && (
+                <div className="mt-4 rounded-2xl border border-foreground/10 bg-secondary/50 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Lightbulb className="h-3.5 w-3.5 text-accent" />
+                    Coach hint
+                  </div>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                    {hint}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>
