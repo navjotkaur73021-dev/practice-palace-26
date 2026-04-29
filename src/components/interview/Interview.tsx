@@ -252,7 +252,24 @@ export const Interview = ({
     toast.success("Sample answer inserted — edit it to make it yours.");
   };
 
-  const persistAnswer = (val: string) => {
+  const handleHint = async () => {
+    if (!question) return;
+    setHinting(true);
+    const { data, error } = await supabase.functions.invoke("hint-answer", {
+      body: {
+        roleTitle: role.title,
+        question: question.text,
+        language,
+        draft: text,
+      },
+    });
+    setHinting(false);
+    if (error || !data?.hint) {
+      toast.error(data?.error || "Couldn't fetch a hint.");
+      return;
+    }
+    setHint(data.hint);
+  };
     setAnswers((prev) => {
       const next = [...prev];
       next[index] = val;
