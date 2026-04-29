@@ -56,6 +56,8 @@ export const Interview = ({
   format,
   autoSkip,
   personality,
+  trickQuestions,
+  focusTopics,
   onExit,
   onComplete,
 }: Props) => {
