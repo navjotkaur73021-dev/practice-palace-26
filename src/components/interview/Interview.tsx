@@ -109,6 +109,8 @@ export const Interview = ({
           difficulty,
           format,
           personality,
+          trickQuestions,
+          focusTopics,
         },
       });
       if (cancelled) return;
@@ -130,6 +132,7 @@ export const Interview = ({
         difficulty,
         format,
         personality,
+        trickQuestions,
         count,
         questions: qs,
         answers: qs.map(() => ""),
@@ -140,7 +143,7 @@ export const Interview = ({
     return () => {
       cancelled = true;
     };
-  }, [role.id, role.title, role.blurb, language, count, difficulty, format, personality]);
+  }, [role.id, role.title, role.blurb, language, count, difficulty, format, personality, trickQuestions, focusTopics]);
 
   const question = questions[index];
   const total = questions.length;
@@ -195,6 +198,7 @@ export const Interview = ({
       difficulty,
       format,
       personality,
+      trickQuestions,
       count,
       questions,
       answers,
