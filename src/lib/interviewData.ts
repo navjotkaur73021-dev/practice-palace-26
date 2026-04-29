@@ -1,6 +1,13 @@
 export type Language = "en" | "hi" | "pa";
 export type Difficulty = "easy" | "medium" | "hard";
 export type QuestionFormat = "open" | "mcq" | "mixed";
+export type Personality = "friendly" | "neutral" | "strict";
+
+export const PERSONALITIES: { id: Personality; label: string; hint: string; emoji: string }[] = [
+  { id: "friendly", label: "Friendly", hint: "Warm, encouraging tone", emoji: "😊" },
+  { id: "neutral", label: "Neutral", hint: "Balanced, professional", emoji: "🧑‍💼" },
+  { id: "strict", label: "Strict", hint: "Tough, FAANG-style grilling", emoji: "🧐" },
+];
 
 export type Role = {
   id: string;

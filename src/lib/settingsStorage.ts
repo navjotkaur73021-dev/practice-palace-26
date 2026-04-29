@@ -1,4 +1,4 @@
-import type { Difficulty, Language, QuestionFormat } from "./interviewData";
+import type { Difficulty, Language, Personality, QuestionFormat } from "./interviewData";
 
 export type SetupSettings = {
   roleId: string;
@@ -7,6 +7,7 @@ export type SetupSettings = {
   difficulty: Difficulty;
   format: QuestionFormat;
   autoSkip: boolean;
+  personality: Personality;
 };
 
 const KEY = "poise:setup-settings";
