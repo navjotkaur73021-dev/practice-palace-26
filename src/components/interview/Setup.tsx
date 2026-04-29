@@ -311,13 +311,13 @@ export const Setup = ({ onBack, onStart }: Props) => {
         <div className="sticky bottom-4 mt-12 rounded-3xl border border-border bg-card/90 p-4 shadow-lifted backdrop-blur-md md:flex md:items-center md:justify-between md:gap-4">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{role.title}</span> ·{" "}
-            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {format} · {count} Qs
+            {LANGUAGES.find((l) => l.id === language)?.native} · {difficulty} · {personality} · {format} · {count} Qs
           </div>
           <Button
             variant="hero"
             size="lg"
             className="mt-3 w-full md:mt-0 md:w-auto"
-            onClick={() => onStart(role, language, count, difficulty, format, autoSkip)}
+            onClick={() => onStart(role, language, count, difficulty, format, autoSkip, personality)}
           >
             Begin Interview
             <ArrowRight />
