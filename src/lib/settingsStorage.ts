@@ -41,6 +41,7 @@ export type InProgressQuiz = {
   language: Language;
   difficulty: Difficulty;
   format: QuestionFormat;
+  personality: Personality;
   count: number;
   questions: QuizQuestion[];
   answers: string[];
@@ -54,7 +55,7 @@ export type QuizQuestion =
   | { kind: "mcq"; text: string; options: string[]; correctIndex: number };
 
 const QUIZ_KEY = "poise:inprogress-quiz";
-const QUIZ_SCHEMA_VERSION = 2;
+const QUIZ_SCHEMA_VERSION = 3;
 // Auto-expire abandoned sessions after 24h so we never resume something stale.
 const QUIZ_TTL_MS = 24 * 60 * 60 * 1000;
 
