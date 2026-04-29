@@ -8,6 +8,7 @@ export type SetupSettings = {
   format: QuestionFormat;
   autoSkip: boolean;
   personality: Personality;
+  trickQuestions: boolean;
 };
 
 const KEY = "poise:setup-settings";
@@ -42,6 +43,7 @@ export type InProgressQuiz = {
   difficulty: Difficulty;
   format: QuestionFormat;
   personality: Personality;
+  trickQuestions: boolean;
   count: number;
   questions: QuizQuestion[];
   answers: string[];
@@ -51,11 +53,11 @@ export type InProgressQuiz = {
 };
 
 export type QuizQuestion =
-  | { kind: "open"; text: string }
-  | { kind: "mcq"; text: string; options: string[]; correctIndex: number };
+  | { kind: "open"; text: string; topic?: string }
+  | { kind: "mcq"; text: string; options: string[]; correctIndex: number; topic?: string };
 
 const QUIZ_KEY = "poise:inprogress-quiz";
-const QUIZ_SCHEMA_VERSION = 3;
+const QUIZ_SCHEMA_VERSION = 4;
 // Auto-expire abandoned sessions after 24h so we never resume something stale.
 const QUIZ_TTL_MS = 24 * 60 * 60 * 1000;
 

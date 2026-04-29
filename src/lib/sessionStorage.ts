@@ -13,6 +13,7 @@ export type SavedScored = {
   improved: string;
   skills?: SkillScores;
   tip?: string;
+  topic?: string;
 } | null;
 
 export type SavedSession = {
