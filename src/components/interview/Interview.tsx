@@ -40,6 +40,8 @@ type Props = {
   format: QuestionFormat;
   autoSkip: boolean;
   personality: Personality;
+  trickQuestions: boolean;
+  focusTopics?: string[];
   onExit: () => void;
   onComplete: (questions: QuizQuestion[], answers: string[]) => void;
 };
