@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Splash } from "@/components/interview/Splash";
 import logoImg from "@/assets/omni-prep-logo.png";
-import type { Role, Language, Difficulty, QuestionFormat } from "@/lib/interviewData";
+import type { Role, Language, Difficulty, QuestionFormat, Personality } from "@/lib/interviewData";
 import type { QuizQuestion } from "@/lib/settingsStorage";
 
 const Landing = lazy(() =>
@@ -18,6 +18,9 @@ const Results = lazy(() =>
 );
 const HistoryView = lazy(() =>
   import("@/components/interview/History").then((m) => ({ default: m.History })),
+);
+const CareerChat = lazy(() =>
+  import("@/components/interview/CareerChat").then((m) => ({ default: m.CareerChat })),
 );
 
 type Stage = "splash" | "landing" | "setup" | "interview" | "results" | "history";
@@ -42,6 +45,7 @@ const Index = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [format, setFormat] = useState<QuestionFormat>("mixed");
   const [autoSkip, setAutoSkip] = useState<boolean>(true);
+  const [personality, setPersonality] = useState<Personality>("neutral");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const resumeRef = useRef<Stage>("landing");
