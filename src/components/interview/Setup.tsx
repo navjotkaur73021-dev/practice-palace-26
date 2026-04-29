@@ -6,10 +6,12 @@ import {
   ROLES,
   LANGUAGES,
   DIFFICULTIES,
+  PERSONALITIES,
   type Role,
   type Language,
   type Difficulty,
   type QuestionFormat,
+  type Personality,
 } from "@/lib/interviewData";
 import { loadSetupSettings, saveSetupSettings } from "@/lib/settingsStorage";
 import {
@@ -21,6 +23,7 @@ import {
   Gauge,
   ListChecks,
   SkipForward,
+  Drama,
 } from "lucide-react";
 
 type Props = {
@@ -32,6 +35,7 @@ type Props = {
     difficulty: Difficulty,
     format: QuestionFormat,
     autoSkip: boolean,
+    personality: Personality,
   ) => void;
 };
 
@@ -56,6 +60,10 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const initialFormat: QuestionFormat =
     saved.format === "open" || saved.format === "mcq" ? saved.format : "mixed";
   const initialAutoSkip = saved.autoSkip ?? true;
+  const initialPersonality: Personality =
+    saved.personality === "friendly" || saved.personality === "strict"
+      ? saved.personality
+      : "neutral";
 
   const [selectedId, setSelectedId] = useState<string>(initialId);
   const [language, setLanguage] = useState<Language>(initialLang);
@@ -63,11 +71,12 @@ export const Setup = ({ onBack, onStart }: Props) => {
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [format, setFormat] = useState<QuestionFormat>(initialFormat);
   const [autoSkip, setAutoSkip] = useState<boolean>(initialAutoSkip);
+  const [personality, setPersonality] = useState<Personality>(initialPersonality);
   const role = ROLES.find((r) => r.id === selectedId)!;
 
   useEffect(() => {
-    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip });
-  }, [selectedId, language, count, difficulty, format, autoSkip]);
+    saveSetupSettings({ roleId: selectedId, language, count, difficulty, format, autoSkip, personality });
+  }, [selectedId, language, count, difficulty, format, autoSkip, personality]);
 
   const Pill = ({
     active,
