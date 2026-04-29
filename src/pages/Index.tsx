@@ -130,13 +130,14 @@ const Index = () => {
         {stage === "setup" && (
           <Setup
             onBack={() => setStage("landing")}
-            onStart={(r, lang, c, d, f, a) => {
+            onStart={(r, lang, c, d, f, a, p) => {
               setRole(r);
               setLanguage(lang);
               setCount(c);
               setDifficulty(d);
               setFormat(f);
               setAutoSkip(a);
+              setPersonality(p);
               setQuestions([]);
               setAnswers([]);
               setStage("interview");
@@ -151,6 +152,7 @@ const Index = () => {
             difficulty={difficulty}
             format={format}
             autoSkip={autoSkip}
+            personality={personality}
             onExit={() => setStage("setup")}
             onComplete={(qs, a) => {
               setQuestions(qs);
