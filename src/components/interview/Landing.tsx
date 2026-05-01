@@ -80,6 +80,14 @@ export const Landing = ({ onStart, onHistory, onDashboard, onResume }: Props) =>
           >
             How it works
           </a>
+          {onDashboard && (
+            <button
+              onClick={onDashboard}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Dashboard
+            </button>
+          )}
           <button
             onClick={onHistory}
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
