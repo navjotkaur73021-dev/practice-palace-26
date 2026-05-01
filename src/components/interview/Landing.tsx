@@ -12,6 +12,7 @@ import { toast } from "sonner";
 type Props = {
   onStart: () => void;
   onHistory: () => void;
+  onDashboard?: () => void;
   onResume?: (
     role: Role,
     language: Language,
@@ -40,7 +41,7 @@ const TIPS = [
   },
 ];
 
-export const Landing = ({ onStart, onHistory, onResume }: Props) => {
+export const Landing = ({ onStart, onHistory, onDashboard, onResume }: Props) => {
   const [resumable, setResumable] = useState<InProgressQuiz | null>(null);
 
   useEffect(() => {
@@ -79,6 +80,14 @@ export const Landing = ({ onStart, onHistory, onResume }: Props) => {
           >
             How it works
           </a>
+          {onDashboard && (
+            <button
+              onClick={onDashboard}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Dashboard
+            </button>
+          )}
           <button
             onClick={onHistory}
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
