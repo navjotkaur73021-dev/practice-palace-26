@@ -12,6 +12,7 @@ import { toast } from "sonner";
 type Props = {
   onStart: () => void;
   onHistory: () => void;
+  onDashboard?: () => void;
   onResume?: (
     role: Role,
     language: Language,
