@@ -119,6 +119,7 @@ const Index = () => {
           <Landing
             onStart={() => setStage("setup")}
             onHistory={() => setStage("history")}
+            onDashboard={() => setStage("dashboard")}
             onResume={(r, lang, c, d, f) => {
               setRole(r);
               setLanguage(lang);
