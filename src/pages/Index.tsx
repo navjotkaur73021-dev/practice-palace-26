@@ -194,6 +194,33 @@ const Index = () => {
           />
         )}
         {stage === "history" && <HistoryView onBack={() => setStage("landing")} />}
+        {stage === "dashboard" && (
+          <Dashboard
+            onBack={() => setStage("landing")}
+            onAdaptive={(topics) => {
+              if (!topics.length) return;
+              // Default role = first session's role
+              const sessions = JSON.parse(localStorage.getItem("poise.sessions.v1") ?? "[]");
+              const last = Array.isArray(sessions) && sessions[0];
+              if (!last) {
+                setStage("setup");
+                return;
+              }
+              setRole({ id: last.roleId, title: last.roleTitle, blurb: "" } as Role);
+              setLanguage(last.language ?? "en");
+              setCount(Math.max(5, Math.min(10, topics.length + 3)));
+              setDifficulty(last.difficulty ?? "medium");
+              setFormat(last.format ?? "mixed");
+              setAutoSkip(true);
+              setPersonality("neutral");
+              setTrickQuestions(false);
+              setFocusTopics(topics);
+              setQuestions([]);
+              setAnswers([]);
+              setStage("interview");
+            }}
+          />
+        )}
       </Suspense>
       {stage !== "splash" && (
         <Suspense fallback={null}>
