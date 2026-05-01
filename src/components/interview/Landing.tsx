@@ -41,7 +41,7 @@ const TIPS = [
   },
 ];
 
-export const Landing = ({ onStart, onHistory, onResume }: Props) => {
+export const Landing = ({ onStart, onHistory, onDashboard, onResume }: Props) => {
   const [resumable, setResumable] = useState<InProgressQuiz | null>(null);
 
   useEffect(() => {
