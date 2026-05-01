@@ -19,13 +19,16 @@ const Results = lazy(() =>
 const HistoryView = lazy(() =>
   import("@/components/interview/History").then((m) => ({ default: m.History })),
 );
+const Dashboard = lazy(() =>
+  import("@/components/interview/Dashboard").then((m) => ({ default: m.Dashboard })),
+);
 const CareerChat = lazy(() =>
   import("@/components/interview/CareerChat").then((m) => ({ default: m.CareerChat })),
 );
 
-type Stage = "splash" | "landing" | "setup" | "interview" | "results" | "history";
+type Stage = "splash" | "landing" | "setup" | "interview" | "results" | "history" | "dashboard";
 
-const RESUMABLE: Stage[] = ["landing", "setup", "history"];
+const RESUMABLE: Stage[] = ["landing", "setup", "history", "dashboard"];
 const STAGE_KEY = "poise:last-stage";
 
 const readLastStage = (): Stage | null => {
