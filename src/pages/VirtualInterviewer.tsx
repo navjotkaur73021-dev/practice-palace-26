@@ -6,90 +6,277 @@ import {
   ArrowLeft,
   ArrowRight,
   Bot,
+  Briefcase,
   CheckCircle2,
+  Code2,
+  HeartPulse,
+  LineChart,
+  Megaphone,
+  Palette,
   RotateCcw,
   Sparkles,
   User,
 } from "lucide-react";
 
-/* ---------- Interview script ---------- */
+/* ---------- Roles ---------- */
 
-type Stage = {
-  id: string;
-  label: string;
-  prompt: string;
-  /** generate a smart follow-up using the candidate's answer (offline heuristic) */
-  followUp: (answer: string) => string | null;
+type RoleId = "software" | "data" | "marketing" | "design" | "sales" | "healthcare";
+
+type Role = {
+  id: RoleId;
+  title: string;
+  blurb: string;
+  icon: React.ComponentType<{ className?: string }>;
+  salaryHint: string;
+  dressing: string[];
+  behavior: string[];
+  /** role-specific career round questions */
+  career: string[];
 };
 
-const SCRIPT: Stage[] = [
+const ROLES: Role[] = [
   {
-    id: "intro",
-    label: "Introduction",
-    prompt:
-      "Welcome! Let's begin. Please introduce yourself — your background, education, and a little about who you are.",
-    followUp: (a) => {
-      const words = wordCount(a);
-      if (words < 25)
-        return "Thanks. Could you expand a little — share one experience or project that shaped who you are professionally?";
-      if (/team|group|club|volunteer/i.test(a))
-        return "Nice — you mentioned working with others. What role do you naturally take in a team?";
-      return "Great. What is one thing about you that wouldn't show up on a resume?";
-    },
+    id: "software",
+    title: "Software Engineer",
+    blurb: "Backend, frontend, full-stack and platform roles.",
+    icon: Code2,
+    salaryHint: "Most candidates quote a CTC range and explain how they researched it.",
+    dressing: [
+      "Smart casual works at most product companies — clean shirt, dark jeans or chinos, closed shoes.",
+      "For enterprise / consulting interviews lean formal: blazer, plain shirt, formal trousers.",
+      "Virtual round: solid plain top, eye-level camera, soft front lighting, tidy background.",
+    ],
+    behavior: [
+      "Think out loud during technical questions — process matters as much as the answer.",
+      "If you don't know, say 'I'd approach it like this…' instead of guessing blindly.",
+      "Have one good question ready about the team's tech stack or engineering culture.",
+    ],
+    career: [
+      "Walk me through a project you're most proud of and your specific contribution.",
+      "Tell me about a time you debugged a tricky production issue. How did you approach it?",
+      "How do you decide between shipping fast and over-engineering for the long term?",
+    ],
   },
   {
-    id: "why-field",
-    label: "Why this field",
-    prompt:
-      "Why did you choose this field? What drew you toward this kind of work?",
-    followUp: (a) => {
-      if (/passion|love|always/i.test(a))
-        return "When you say it's a passion — can you point to a specific moment that confirmed this was the right path?";
-      if (wordCount(a) < 20)
-        return "Could you give a concrete example — a project, a person, or an experience that influenced you?";
-      return "How do you see this field evolving in the next few years, and where do you want to fit in?";
-    },
+    id: "data",
+    title: "Data Analyst / Scientist",
+    blurb: "Analytics, BI, ML and data engineering roles.",
+    icon: LineChart,
+    salaryHint: "Be ready to justify your number with experience, tools, and impact metrics.",
+    dressing: [
+      "Business casual: collared shirt or blouse with formal trousers or a knee-length skirt.",
+      "Avoid loud patterns — interviewers should remember your insights, not your outfit.",
+      "Carry a notebook and pen — useful for sketching data flows on a whiteboard round.",
+    ],
+    behavior: [
+      "Ground every answer in numbers — 'reduced churn by 12%' beats 'improved churn'.",
+      "When asked a case question, restate the problem in your own words before answering.",
+      "Show curiosity — ask what data sources or KPIs the team currently relies on.",
+    ],
+    career: [
+      "Describe an analysis where your insight changed a business decision.",
+      "How do you handle missing or messy data in a real project?",
+      "Walk me through how you'd measure the success of a new product feature.",
+    ],
   },
   {
-    id: "strengths",
-    label: "Strengths",
-    prompt:
-      "What are your top strengths? Pick two or three and explain how they show up in your work.",
-    followUp: (a) => {
-      if (!/example|project|when|once|time/i.test(a))
-        return "Can you give a specific situation where one of those strengths made a real difference?";
-      return "And on the flip side — what's one weakness you're actively working on?";
-    },
+    id: "marketing",
+    title: "Marketing / Growth",
+    blurb: "Brand, performance, content and growth roles.",
+    icon: Megaphone,
+    salaryHint: "Many marketing offers include variable / performance pay — clarify base vs total.",
+    dressing: [
+      "Lean polished and on-brand — well-fitted blazer, sharp colour accent allowed.",
+      "Footwear: clean leather shoes or block heels, never sneakers for client-facing roles.",
+      "Show personality through one accessory, not five.",
+    ],
+    behavior: [
+      "Bring a one-page portfolio of campaigns with measurable outcomes.",
+      "Speak the language of funnels: awareness → consideration → conversion → retention.",
+      "Show storytelling skill — every campaign answer should have a clear arc.",
+    ],
+    career: [
+      "Tell me about a campaign you led from idea to launch. What was the result?",
+      "How do you decide where to invest a limited marketing budget?",
+      "Describe a campaign that underperformed. What did you learn?",
+    ],
   },
   {
-    id: "goals",
-    label: "Career goals",
-    prompt:
-      "Where do you see yourself in the next 3 to 5 years? What are your career goals?",
-    followUp: (a) => {
-      if (/manager|lead|head|director/i.test(a))
-        return "You mentioned a leadership track — what skills do you think you still need to develop to get there?";
-      if (wordCount(a) < 20)
-        return "Try to be more specific — what role, what kind of company, and what impact do you want to have made?";
-      return "How does this role you're interviewing for fit into that longer-term picture?";
-    },
+    id: "design",
+    title: "Product / UX Designer",
+    blurb: "Product design, UX research and visual design roles.",
+    icon: Palette,
+    salaryHint: "Designers often negotiate on title, scope and equity alongside base pay.",
+    dressing: [
+      "Creative-smart: well-fitted neutral outfit with one considered design detail.",
+      "Avoid clutter — your portfolio should do the talking, not your accessories.",
+      "Bring a laptop or tablet ready to walk through 2–3 case studies.",
+    ],
+    behavior: [
+      "Frame every case study as Problem → Process → Decision → Outcome.",
+      "Talk about trade-offs you made and why — designers are hired for judgement.",
+      "Invite critique gracefully; show how you incorporate feedback.",
+    ],
+    career: [
+      "Walk me through a case study where research changed your design direction.",
+      "Tell me about a time you disagreed with a PM or engineer. How did you resolve it?",
+      "How do you balance user needs with business constraints?",
+    ],
   },
   {
-    id: "salary",
-    label: "Salary expectations",
-    prompt:
-      "Let's talk numbers. What are your salary expectations for this role, and how did you arrive at that figure?",
-    followUp: (a) => {
-      if (!/\d/.test(a))
-        return "Could you share a specific range? Even a rough figure helps us understand your expectations.";
-      if (/negotiable|flexible|open/i.test(a))
-        return "Flexibility is good — but what would be your ideal number if everything else aligned?";
-      return "And beyond salary — what other parts of an offer matter most to you (growth, learning, flexibility, equity)?";
-    },
+    id: "sales",
+    title: "Sales / Business Development",
+    blurb: "Inside sales, AE, BD and account management roles.",
+    icon: Briefcase,
+    salaryHint: "Always clarify base, OTE (on-target earnings), and commission structure.",
+    dressing: [
+      "Full formals: tailored suit or blazer in navy / charcoal, crisp shirt, polished shoes.",
+      "Grooming is non-negotiable — neat hair, trimmed nails, subtle fragrance.",
+      "First impression carries weight — dress one notch above the company's daily code.",
+    ],
+    behavior: [
+      "Project warmth and confidence in equal measure — smile, firm handshake, eye contact.",
+      "Numbers, numbers, numbers — quota %, deal size, win rate, ramp time.",
+      "Treat the interview like a discovery call: ask, listen, then position yourself.",
+    ],
+    career: [
+      "Describe your largest deal. How did you find, qualify and close it?",
+      "Tell me about a deal you lost. What would you do differently?",
+      "How do you build a pipeline from scratch in a new territory?",
+    ],
+  },
+  {
+    id: "healthcare",
+    title: "Healthcare / Clinical",
+    blurb: "Nursing, allied health, clinical and hospital roles.",
+    icon: HeartPulse,
+    salaryHint: "Discuss shift allowances, on-call pay and benefits alongside base salary.",
+    dressing: [
+      "Conservative formals — covered shoulders, knee-length, muted colours.",
+      "Minimal jewellery and fragrance; tied-back hair; closed-toe shoes.",
+      "Carry copies of certifications and licences in a neat folder.",
+    ],
+    behavior: [
+      "Lead with empathy in every example — patient outcomes come first.",
+      "Demonstrate calm under pressure with a specific clinical incident.",
+      "Show respect for hierarchy and multidisciplinary teamwork.",
+    ],
+    career: [
+      "Tell me about a difficult patient or family interaction and how you handled it.",
+      "Describe a time you had to act quickly in a clinical emergency.",
+      "How do you keep your clinical knowledge up to date?",
+    ],
   },
 ];
 
-/* ---------- Heuristic helpers ---------- */
+/* ---------- Rounds & questions ---------- */
+
+type RoundId = "intro" | "career" | "salary";
+
+type Stage = {
+  id: string;
+  round: RoundId;
+  prompt: string;
+  followUp: (answer: string) => string | null;
+};
+
+function buildScript(role: Role): Stage[] {
+  const intro: Stage[] = [
+    {
+      id: "intro-1",
+      round: "intro",
+      prompt: `Welcome — thanks for joining today. To get started, please introduce yourself: your background, education and a bit about who you are as a ${role.title.toLowerCase()}.`,
+      followUp: (a) => {
+        if (wordCount(a) < 25)
+          return "Thanks. Could you expand a little — share one experience or project that shaped your journey?";
+        if (/team|group|club|volunteer/i.test(a))
+          return "You mentioned working with others. What role do you naturally take in a team?";
+        return "Great. What's one thing about you that wouldn't show up on your resume?";
+      },
+    },
+    {
+      id: "intro-2",
+      round: "intro",
+      prompt: `Why did you choose to become a ${role.title.toLowerCase()}? What pulled you toward this field?`,
+      followUp: (a) => {
+        if (/passion|love|always/i.test(a))
+          return "Can you point to a specific moment that confirmed this was the right path for you?";
+        if (wordCount(a) < 20)
+          return "Could you give a concrete example — a project, a person, or an experience that influenced you?";
+        return null;
+      },
+    },
+  ];
+
+  const career: Stage[] = role.career.map((q, i) => ({
+    id: `career-${i + 1}`,
+    round: "career" as const,
+    prompt: q,
+    followUp: (a: string) => {
+      if (wordCount(a) < 25)
+        return "Could you go deeper — what was the situation, your specific action, and the measurable outcome?";
+      if (!/example|project|when|once|time|client|customer|user/i.test(a))
+        return "Can you ground that in a specific example from your experience?";
+      return null;
+    },
+  }));
+
+  const strengths: Stage = {
+    id: "career-strengths",
+    round: "career",
+    prompt: "What are your top strengths, and what is one weakness you're actively working on?",
+    followUp: (a) => {
+      if (!/weak|improve|working on|developing/i.test(a))
+        return "And the weakness side — what's one area you're consciously trying to improve?";
+      return null;
+    },
+  };
+
+  const goals: Stage = {
+    id: "career-goals",
+    round: "career",
+    prompt: "Where do you see yourself in the next 3 to 5 years?",
+    followUp: (a) => {
+      if (/manager|lead|head|director/i.test(a))
+        return "You mentioned a leadership track — what skills do you still need to get there?";
+      if (wordCount(a) < 20)
+        return "Try to be specific — what role, what kind of company, and what impact would you have made?";
+      return null;
+    },
+  };
+
+  const salary: Stage[] = [
+    {
+      id: "salary-1",
+      round: "salary",
+      prompt: `Let's talk numbers. What are your salary expectations for this ${role.title.toLowerCase()} role, and how did you arrive at that figure?`,
+      followUp: (a) => {
+        if (!/\d/.test(a))
+          return "Could you share a specific range? Even a rough figure helps frame the conversation.";
+        if (/negotiable|flexible|open/i.test(a))
+          return "Flexibility is good — but what would be your ideal number if everything else aligned?";
+        return null;
+      },
+    },
+    {
+      id: "salary-2",
+      round: "salary",
+      prompt:
+        "Beyond base pay, what other parts of an offer matter most to you — growth, learning, flexibility, equity, benefits?",
+      followUp: () => null,
+    },
+  ];
+
+  return [...intro, ...career, strengths, goals, ...salary];
+}
+
+const ROUND_META: Record<RoundId, { label: string; tagline: string }> = {
+  intro: { label: "Introduction Round", tagline: "Get to know you" },
+  career: { label: "Career Questions Round", tagline: "Experience, strengths and goals" },
+  salary: { label: "Salary / Package Discussion", tagline: "Expectations and priorities" },
+};
+
+/* ---------- Heuristics ---------- */
 
 function wordCount(s: string) {
   const t = s.trim();
@@ -97,7 +284,6 @@ function wordCount(s: string) {
 }
 
 const FILLERS = ["um", "uh", "like", "you know", "basically", "actually", "literally", "sort of", "kind of"];
-
 function fillerCount(s: string) {
   const lower = " " + s.toLowerCase() + " ";
   return FILLERS.reduce((n, f) => n + (lower.match(new RegExp(`\\b${f}\\b`, "g"))?.length ?? 0), 0);
@@ -105,25 +291,29 @@ function fillerCount(s: string) {
 
 const CONFIDENCE_NEG = /\b(maybe|i guess|i think|sort of|kind of|not sure|probably|hopefully|try to)\b/gi;
 const CONFIDENCE_POS = /\b(i will|i can|i have|i led|i built|i delivered|i achieved|confident|certain)\b/gi;
-const STRONG_VERBS = /\b(led|built|launched|designed|delivered|owned|drove|created|improved|reduced|grew|managed)\b/gi;
+const STRONG_VERBS = /\b(led|built|launched|designed|delivered|owned|drove|created|improved|reduced|grew|managed|analysed|analyzed|shipped)\b/gi;
 
-type Turn = { stageId: string; question: string; answer: string; isFollowUp: boolean };
+type Turn = { stageId: string; round: RoundId; question: string; answer: string; isFollowUp: boolean };
 
 type Feedback = {
   communication: number;
   confidence: number;
   clarity: number;
   overall: number;
+  byRound: Record<RoundId, { words: number; turns: number }>;
   notes: string[];
   suggestions: string[];
-  dressing: string[];
-  behavior: string[];
 };
 
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
 function analyze(turns: Turn[]): Feedback {
-  const allText = turns.map((t) => t.answer).join(" ");
+  const real = turns.filter((t) => t.answer && t.answer !== "(skipped)");
+  const allText = real.map((t) => t.answer).join(" ");
   const totalWords = wordCount(allText);
-  const avgWords = totalWords / Math.max(turns.length, 1);
+  const avgWords = totalWords / Math.max(real.length, 1);
   const fillers = fillerCount(allText);
   const negHedges = (allText.match(CONFIDENCE_NEG) ?? []).length;
   const posClaims = (allText.match(CONFIDENCE_POS) ?? []).length;
@@ -131,20 +321,17 @@ function analyze(turns: Turn[]): Feedback {
   const sentences = allText.split(/[.!?]+/).filter((s) => s.trim().length > 0);
   const avgSentence = sentences.length ? totalWords / sentences.length : 0;
 
-  // Communication: based on length per answer + variety
   let communication = 50;
   if (avgWords >= 35) communication += 25;
   else if (avgWords >= 20) communication += 15;
   else if (avgWords < 10) communication -= 15;
   if (avgSentence > 8 && avgSentence < 28) communication += 10;
-  if (fillers > turns.length * 2) communication -= 10;
+  if (fillers > real.length * 2) communication -= 10;
   communication = clamp(communication, 0, 100);
 
-  // Confidence
   let confidence = 55 + posClaims * 4 + strongVerbs * 3 - negHedges * 4 - fillers * 2;
   confidence = clamp(confidence, 0, 100);
 
-  // Clarity: penalise very long sentences and very short answers
   let clarity = 60;
   if (avgSentence > 30) clarity -= 15;
   if (avgSentence < 5) clarity -= 10;
@@ -154,45 +341,45 @@ function analyze(turns: Turn[]): Feedback {
 
   const overall = Math.round((communication + confidence + clarity) / 3);
 
+  const byRound: Feedback["byRound"] = {
+    intro: { words: 0, turns: 0 },
+    career: { words: 0, turns: 0 },
+    salary: { words: 0, turns: 0 },
+  };
+  for (const t of real) {
+    byRound[t.round].words += wordCount(t.answer);
+    byRound[t.round].turns += 1;
+  }
+
   const notes: string[] = [];
-  notes.push(`You spoke roughly ${totalWords} words across ${turns.length} answers (avg ${Math.round(avgWords)} words / answer).`);
-  if (fillers > 0) notes.push(`Detected ~${fillers} filler word${fillers === 1 ? "" : "s"} (e.g. "um", "like", "basically").`);
-  if (negHedges > posClaims) notes.push("You hedged more than you claimed ownership — try replacing 'I think' with 'I will' or 'I have'.");
-  if (strongVerbs >= 3) notes.push(`Good use of strong action verbs (${strongVerbs} detected).`);
-  if (avgSentence > 28) notes.push("Some sentences ran long — break complex ideas into shorter, punchier statements.");
+  notes.push(`You spoke ~${totalWords} words across ${real.length} answers (avg ${Math.round(avgWords)} words / answer).`);
+  if (fillers > 0) notes.push(`Detected ~${fillers} filler word${fillers === 1 ? "" : "s"} (e.g. "um", "like").`);
+  if (negHedges > posClaims)
+    notes.push("You hedged more than you owned — replace 'I think' with 'I will' or 'I have'.");
+  if (strongVerbs >= 3) notes.push(`Good use of action verbs (${strongVerbs} detected).`);
+  if (avgSentence > 28) notes.push("Some sentences ran long — break complex ideas into shorter statements.");
+  if (turns.some((t) => t.answer === "(skipped)"))
+    notes.push("You skipped at least one question — in a real interview, attempt every answer.");
 
   const suggestions: string[] = [];
   if (avgWords < 20) suggestions.push("Aim for 30–60 second answers — use the STAR format (Situation, Task, Action, Result).");
-  if (negHedges > 2) suggestions.push("Replace tentative phrases like 'maybe' or 'I guess' with definite ones to project authority.");
-  if (fillers > 3) suggestions.push("Pause briefly instead of using filler words — silence reads as confidence.");
-  if (strongVerbs < 2) suggestions.push("Quantify achievements where possible (e.g. 'improved X by 30%') and lead with action verbs.");
-  if (suggestions.length === 0) suggestions.push("Solid baseline — refine by tightening openings and closing each answer with a clear takeaway.");
+  if (negHedges > 2) suggestions.push("Swap tentative phrases ('maybe', 'I guess') for definite ones to project authority.");
+  if (fillers > 3) suggestions.push("Pause briefly instead of using fillers — silence reads as confidence.");
+  if (strongVerbs < 2) suggestions.push("Quantify achievements (e.g. 'improved X by 30%') and lead with action verbs.");
+  if (suggestions.length === 0)
+    suggestions.push("Solid baseline — refine by tightening openings and closing each answer with a clear takeaway.");
 
-  const dressing: string[] = [
-    "Choose neutral, well-fitted formals (navy, charcoal, or deep grey). Avoid bright patterns.",
-    "Polished closed-toe shoes; minimal jewellery; neat hair and trimmed nails.",
-    "If virtual: solid plain top, soft front-facing light, camera at eye level, plain background.",
-  ];
-
-  const behavior: string[] = [
-    "Arrive (or log in) 5–10 minutes early. Greet with a calm smile and firm handshake.",
-    "Maintain steady eye contact ~70% of the time; nod to show active listening.",
-    "Sit upright, shoulders relaxed, hands visible. Avoid crossing arms or fidgeting.",
-    "Pause for a beat before answering — it shows thoughtfulness, not hesitation.",
-    "Close the interview by thanking the panel and asking one thoughtful question about the team or role.",
-  ];
-
-  return { communication, confidence, clarity, overall, notes, suggestions, dressing, behavior };
-}
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n));
+  return { communication, confidence, clarity, overall, byRound, notes, suggestions };
 }
 
 /* ---------- Page ---------- */
 
+type Phase = "role" | "countdown" | "interview" | "results";
+
 const VirtualInterviewer = () => {
-  const [phase, setPhase] = useState<"intro" | "interview" | "results">("intro");
+  const [phase, setPhase] = useState<Phase>("role");
+  const [role, setRole] = useState<Role | null>(null);
+  const [countdown, setCountdown] = useState(5);
   const [stageIdx, setStageIdx] = useState(0);
   const [askingFollowUp, setAskingFollowUp] = useState(false);
   const [followUpText, setFollowUpText] = useState<string | null>(null);
@@ -200,21 +387,35 @@ const VirtualInterviewer = () => {
   const [turns, setTurns] = useState<Turn[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const stage = SCRIPT[stageIdx];
+  const script = useMemo(() => (role ? buildScript(role) : []), [role]);
+  const stage = script[stageIdx];
   const currentQuestion = askingFollowUp && followUpText ? followUpText : stage?.prompt ?? "";
-  const progress = ((stageIdx + (askingFollowUp ? 0.5 : 0)) / SCRIPT.length) * 100;
+  const progress = script.length ? ((stageIdx + (askingFollowUp ? 0.5 : 0)) / script.length) * 100 : 0;
+
+  // Auto-start countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    if (countdown <= 0) {
+      setPhase("interview");
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, currentQuestion, phase]);
 
-  const start = () => {
-    setPhase("interview");
+  const pickRole = (r: Role) => {
+    setRole(r);
     setStageIdx(0);
     setAskingFollowUp(false);
     setFollowUpText(null);
     setDraft("");
     setTurns([]);
+    setCountdown(5);
+    setPhase("countdown");
   };
 
   const submitAnswer = () => {
@@ -222,12 +423,12 @@ const VirtualInterviewer = () => {
     if (!answer || !stage) return;
     const turn: Turn = {
       stageId: stage.id,
+      round: stage.round,
       question: currentQuestion,
       answer,
       isFollowUp: askingFollowUp,
     };
-    const nextTurns = [...turns, turn];
-    setTurns(nextTurns);
+    setTurns((prev) => [...prev, turn]);
     setDraft("");
 
     if (!askingFollowUp) {
@@ -238,42 +439,43 @@ const VirtualInterviewer = () => {
         return;
       }
     }
-    // advance to next stage
-    setAskingFollowUp(false);
-    setFollowUpText(null);
-    if (stageIdx + 1 >= SCRIPT.length) {
-      setPhase("results");
-    } else {
-      setStageIdx(stageIdx + 1);
-    }
+    advance();
   };
 
   const skip = () => {
     if (!stage) return;
     const turn: Turn = {
       stageId: stage.id,
+      round: stage.round,
       question: currentQuestion,
       answer: "(skipped)",
       isFollowUp: askingFollowUp,
     };
-    setTurns([...turns, turn]);
+    setTurns((prev) => [...prev, turn]);
     setDraft("");
+    advance();
+  };
+
+  const advance = () => {
     setAskingFollowUp(false);
     setFollowUpText(null);
-    if (stageIdx + 1 >= SCRIPT.length) setPhase("results");
+    if (stageIdx + 1 >= script.length) setPhase("results");
     else setStageIdx(stageIdx + 1);
   };
 
   const restart = () => {
-    setPhase("intro");
+    setPhase("role");
+    setRole(null);
     setStageIdx(0);
     setAskingFollowUp(false);
     setFollowUpText(null);
     setDraft("");
     setTurns([]);
+    setCountdown(5);
   };
 
   const feedback = useMemo(() => (phase === "results" ? analyze(turns) : null), [phase, turns]);
+  const currentRound = stage?.round;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -291,49 +493,91 @@ const VirtualInterviewer = () => {
       </header>
 
       <main className="container max-w-3xl py-10">
-        {phase === "intro" && (
-          <section className="rounded-3xl border border-border bg-card p-8 shadow-soft">
+        {phase === "role" && (
+          <section>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
               <Sparkles className="h-3 w-3" /> Offline · No API
             </span>
             <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight">
-              A scripted, end-to-end mock interview.
+              Choose your role to begin.
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              Your AI interviewer will guide you through five stages — introduction, motivation,
-              strengths, career goals and salary — with smart follow-ups based on what you say.
-              At the end, you'll get feedback on communication, confidence and behaviour.
+            <p className="mt-2 text-muted-foreground">
+              The interviewer adapts its questions, tone, and feedback to the role you pick.
+              Three rounds: introduction, career questions, and salary discussion.
             </p>
-            <ul className="mt-6 grid gap-2 text-sm text-muted-foreground">
-              {SCRIPT.map((s, i) => (
-                <li key={s.id} className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary font-display text-xs font-semibold text-foreground">
-                    {i + 1}
-                  </span>
-                  {s.label}
-                </li>
-              ))}
-            </ul>
-            <Button variant="ink" size="lg" className="mt-8" onClick={start}>
-              Start interview <ArrowRight />
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {ROLES.map((r) => {
+                const Icon = r.icon;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => pickRole(r)}
+                    className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-accent hover:shadow-coral"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className="block font-display text-base font-semibold">{r.title}</span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">{r.blurb}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {phase === "countdown" && role && (
+          <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Interview starting · {role.title}
+            </span>
+            <div className="mt-6 font-display text-[8rem] font-semibold leading-none text-accent tabular-nums">
+              {countdown || "Go"}
+            </div>
+            <p className="mt-4 max-w-md text-muted-foreground">
+              Take a breath. Sit upright, smile, and look into the camera. Your interviewer will
+              ask the first question automatically.
+            </p>
+            <Button variant="ghost" size="sm" className="mt-6" onClick={() => setPhase("interview")}>
+              Skip countdown <ArrowRight />
             </Button>
           </section>
         )}
 
-        {phase === "interview" && stage && (
+        {phase === "interview" && stage && role && (
           <section className="flex flex-col gap-6">
             <div>
               <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <span>
-                  Stage {stageIdx + 1} / {SCRIPT.length} · {stage.label}
+                  {ROUND_META[stage.round].label} · {role.title}
                 </span>
-                <span>{askingFollowUp ? "Follow-up" : "Main question"}</span>
+                <span>
+                  Q {stageIdx + 1} / {script.length}
+                  {askingFollowUp ? " · follow-up" : ""}
+                </span>
               </div>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
                 <div
                   className="h-full bg-gradient-warm transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
+              </div>
+              <div className="mt-3 flex gap-2 text-[11px]">
+                {(["intro", "career", "salary"] as RoundId[]).map((r) => (
+                  <span
+                    key={r}
+                    className={`rounded-full px-2.5 py-1 font-medium ${
+                      r === currentRound
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {ROUND_META[r].label}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -374,20 +618,36 @@ const VirtualInterviewer = () => {
           </section>
         )}
 
-        {phase === "results" && feedback && (
+        {phase === "results" && feedback && role && (
           <section className="space-y-6">
             <div className="rounded-3xl border border-border bg-card p-8 shadow-soft">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-                <CheckCircle2 className="h-3 w-3" /> Interview complete
+                <CheckCircle2 className="h-3 w-3" /> Final Interview Report
               </span>
               <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight">
-                Your interview report
+                {role.title} — your performance
               </h2>
               <div className="mt-6 grid gap-4 sm:grid-cols-4">
                 <ScoreCard label="Overall" value={feedback.overall} highlight />
                 <ScoreCard label="Communication" value={feedback.communication} />
                 <ScoreCard label="Confidence" value={feedback.confidence} />
                 <ScoreCard label="Clarity" value={feedback.clarity} />
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                {(["intro", "career", "salary"] as RoundId[]).map((r) => (
+                  <div key={r} className="rounded-2xl border border-border bg-secondary/40 p-4">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      {ROUND_META[r].label}
+                    </div>
+                    <div className="mt-1 font-display text-xl font-semibold">
+                      {feedback.byRound[r].turns} answers
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {feedback.byRound[r].words} words total
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -413,10 +673,14 @@ const VirtualInterviewer = () => {
               </ul>
             </Panel>
 
+            <Panel title="Salary discussion notes">
+              <p className="text-sm text-foreground/90">{role.salaryHint}</p>
+            </Panel>
+
             <div className="grid gap-6 md:grid-cols-2">
-              <Panel title="Dressing tips">
+              <Panel title={`Dressing tips · ${role.title}`}>
                 <ul className="space-y-2 text-sm text-foreground/90">
-                  {feedback.dressing.map((n, i) => (
+                  {role.dressing.map((n, i) => (
                     <li key={i} className="flex gap-2">
                       <span className="text-accent">•</span>
                       {n}
@@ -424,9 +688,9 @@ const VirtualInterviewer = () => {
                   ))}
                 </ul>
               </Panel>
-              <Panel title="Interview behaviour">
+              <Panel title={`Behaviour tips · ${role.title}`}>
                 <ul className="space-y-2 text-sm text-foreground/90">
-                  {feedback.behavior.map((n, i) => (
+                  {role.behavior.map((n, i) => (
                     <li key={i} className="flex gap-2">
                       <span className="text-accent">•</span>
                       {n}
@@ -441,7 +705,7 @@ const VirtualInterviewer = () => {
                 {turns.map((t, i) => (
                   <div key={i} className="space-y-2">
                     <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {SCRIPT.find((s) => s.id === t.stageId)?.label}
+                      {ROUND_META[t.round].label}
                       {t.isFollowUp ? " · follow-up" : ""}
                     </div>
                     <Bubble who="bot">{t.question}</Bubble>
@@ -453,7 +717,7 @@ const VirtualInterviewer = () => {
 
             <div className="flex justify-center">
               <Button variant="ink" size="lg" onClick={restart}>
-                <RotateCcw /> Run again
+                <RotateCcw /> Run a new interview
               </Button>
             </div>
           </section>
@@ -463,7 +727,7 @@ const VirtualInterviewer = () => {
   );
 };
 
-/* ---------- Small UI atoms ---------- */
+/* ---------- Atoms ---------- */
 
 const Bubble = ({
   who,
