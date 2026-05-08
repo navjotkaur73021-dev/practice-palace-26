@@ -24,6 +24,17 @@ import {
   RotateCcw,
   CheckCircle2,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 /* ---------------- Types ---------------- */
 
@@ -83,6 +94,45 @@ const MODES: { id: Mode; label: string; desc: string; count: number }[] = [
 
 /* ---------------- Question generator (offline) ---------------- */
 
+const STREAM_QUESTIONS: Record<string, { q: string; tag: string }[]> = {
+  "Science (PCM)": [
+    { q: "Explain a real-world application of calculus or vectors you have seen.", tag: "Stream • PCM" },
+    { q: "Which physics concept fascinates you the most and why?", tag: "Stream • PCM" },
+  ],
+  "Science (PCB)": [
+    { q: "Describe a biological process you find most interesting.", tag: "Stream • PCB" },
+    { q: "How does chemistry connect to everyday life or healthcare?", tag: "Stream • PCB" },
+  ],
+  Commerce: [
+    { q: "Explain the difference between a balance sheet and an income statement.", tag: "Stream • Commerce" },
+    { q: "How do interest rates affect the economy?", tag: "Stream • Commerce" },
+  ],
+  "Arts / Humanities": [
+    { q: "Which historical event do you think shapes today's world the most?", tag: "Stream • Arts" },
+    { q: "How can literature influence society?", tag: "Stream • Arts" },
+  ],
+  Engineering: [
+    { q: "Describe an engineering project you contributed to.", tag: "Stream • Engineering" },
+    { q: "How do you approach debugging a system that suddenly fails?", tag: "Stream • Engineering" },
+  ],
+  "Computer Applications": [
+    { q: "Explain OOP in your own words with a real example.", tag: "Stream • CA" },
+    { q: "What is the difference between SQL and NoSQL databases?", tag: "Stream • CA" },
+  ],
+  "Management (BBA/MBA)": [
+    { q: "How would you motivate an underperforming team member?", tag: "Stream • Management" },
+    { q: "Describe a SWOT analysis you have done.", tag: "Stream • Management" },
+  ],
+  Medical: [
+    { q: "How do you handle emotionally heavy situations?", tag: "Stream • Medical" },
+    { q: "Why is empathy critical in healthcare?", tag: "Stream • Medical" },
+  ],
+  Law: [
+    { q: "Describe a recent case or law that interests you.", tag: "Stream • Law" },
+    { q: "How do you build an argument for a tough position?", tag: "Stream • Law" },
+  ],
+};
+
 function buildQuestions(p: Profile): { q: string; tag: string }[] {
   const field = p.field || "your chosen field";
   const stream = p.stream || "your stream";
@@ -92,6 +142,10 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
   const intro = [
     { q: `Tell us about yourself, ${p.fullName || "candidate"}.`, tag: "Introduction" },
     { q: `Why did you choose ${stream} after school?`, tag: "Background" },
+  ];
+
+  const streamQs = STREAM_QUESTIONS[p.stream] ?? [
+    { q: `Explain a key concept from ${stream} that shaped your thinking.`, tag: "Stream" },
   ];
 
   const career = [
@@ -104,7 +158,6 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
   ];
 
   const technical = [
-    { q: `Explain a concept from ${stream} that applies to ${field}.`, tag: "Technical" },
     { q: `How would you stay updated with new tools and skills in ${field}?`, tag: "Learning" },
     { q: `Tell us about a time you solved a difficult problem.`, tag: "Problem solving" },
   ];
@@ -122,9 +175,18 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
     { q: `Do you have any questions for us?`, tag: "Closing" },
   ];
 
-  const all = [...intro, ...career, ...technical, ...behavior, ...close];
+  const all = [...intro, ...streamQs, ...career, ...technical, ...behavior, ...close];
   const count = MODES.find((m) => m.id === p.mode)?.count ?? 8;
   return all.slice(0, count);
+}
+
+function greeting(p: Profile): string {
+  const name = p.fullName.trim().split(/\s+/)[0] || "there";
+  const hour = new Date().getHours();
+  const tod = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const fieldLine = p.field ? ` Excited to explore your interest in ${p.field}.` : "";
+  const streamLine = p.stream ? ` We'll tailor questions to your ${p.stream} background.` : "";
+  return `${tod}, ${name}!${fieldLine}${streamLine} Take a breath — let's begin.`;
 }
 
 /* ---------------- Scoring heuristics ---------------- */
@@ -260,6 +322,7 @@ export default function CareerGuidance() {
             setAnswer={setAnswer}
             onSubmit={submitAnswer}
             onExit={() => setStage("profile")}
+            greeting={idx === 0 ? greeting(profile) : null}
           />
         )}
 
@@ -422,6 +485,7 @@ function InterviewPanel({
   setAnswer,
   onSubmit,
   onExit,
+  greeting,
 }: {
   idx: number;
   total: number;
@@ -430,6 +494,7 @@ function InterviewPanel({
   setAnswer: (s: string) => void;
   onSubmit: () => void;
   onExit: () => void;
+  greeting?: string | null;
 }) {
   const pct = ((idx) / total) * 100;
   return (
@@ -441,6 +506,12 @@ function InterviewPanel({
         </div>
         <Button variant="ghost" size="sm" onClick={onExit}>Exit</Button>
       </div>
+
+      {greeting && (
+        <Card className="p-4 border-primary/40 bg-primary/5">
+          <div className="text-sm">{greeting}</div>
+        </Card>
+      )}
 
       <Card className="p-6 space-y-4">
         <Badge variant="secondary">{current.tag}</Badge>
@@ -538,6 +609,8 @@ function Report({
         <ScoreCard label="Knowledge" value={scores.knowledge} />
       </div>
 
+      <PerformanceDashboard turns={turns} scores={scores} />
+
       <div className="grid md:grid-cols-3 gap-4">
         <TipCard title="Dressing Tips" items={tips.dressing} />
         <TipCard title="Communication Tips" items={tips.communication} />
@@ -587,6 +660,106 @@ function TipCard({ title, items }: { title: string; items: string[] }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/* ---------------- Performance Dashboard ---------------- */
+
+function answerScore(a: string): number {
+  const words = a.trim().split(/\s+/).filter(Boolean).length;
+  if (!words) return 0;
+  const text = a.toLowerCase();
+  const fillerHits = FILLERS.reduce((s, f) => s + (text.match(new RegExp(`\\b${f}\\b`, "g")) || []).length, 0);
+  const strongHits = STRONG.reduce((s, k) => s + (text.match(new RegExp(`\\b${k}\\b`, "g")) || []).length, 0);
+  let score = 40 + Math.min(40, words * 1.2) + strongHits * 5 - fillerHits * 4;
+  if (words > 25 && words < 90) score += 10;
+  return clamp(score);
+}
+
+function PerformanceDashboard({ turns, scores }: { turns: Turn[]; scores: ReturnType<typeof score> }) {
+  const lineData = turns.map((t, i) => ({ name: `Q${i + 1}`, score: answerScore(t.a) }));
+
+  const topicMap = new Map<string, { total: number; count: number }>();
+  turns.forEach((t) => {
+    const s = answerScore(t.a);
+    const cur = topicMap.get(t.tag) ?? { total: 0, count: 0 };
+    cur.total += s;
+    cur.count += 1;
+    topicMap.set(t.tag, cur);
+  });
+  const topicData = Array.from(topicMap.entries())
+    .map(([topic, v]) => ({ topic, score: Math.round(v.total / Math.max(1, v.count)) }))
+    .sort((a, b) => b.score - a.score);
+
+  const weak = topicData.slice().sort((a, b) => a.score - b.score).slice(0, 3);
+
+  return (
+    <Card className="p-6 space-y-6">
+      <div>
+        <h3 className="font-medium">Performance Dashboard</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Score progression across questions and topic-wise breakdown.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <div className="text-xs text-muted-foreground mb-2">Score per Question</div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs text-muted-foreground mb-2">Topic-wise Average</div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topicData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="topic" stroke="hsl(var(--muted-foreground))" fontSize={10} interval={0} angle={-20} textAnchor="end" height={60} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-muted-foreground mb-2">Weak Areas to Improve</div>
+        <div className="flex flex-wrap gap-2">
+          {weak.length === 0 && <span className="text-sm text-muted-foreground">No data yet.</span>}
+          {weak.map((w) => (
+            <Badge key={w.topic} variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+              {w.topic} · {w.score}
+            </Badge>
+          ))}
+        </div>
+      </div>
     </Card>
   );
 }
