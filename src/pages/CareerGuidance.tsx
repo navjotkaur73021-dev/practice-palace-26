@@ -83,6 +83,45 @@ const MODES: { id: Mode; label: string; desc: string; count: number }[] = [
 
 /* ---------------- Question generator (offline) ---------------- */
 
+const STREAM_QUESTIONS: Record<string, { q: string; tag: string }[]> = {
+  "Science (PCM)": [
+    { q: "Explain a real-world application of calculus or vectors you have seen.", tag: "Stream • PCM" },
+    { q: "Which physics concept fascinates you the most and why?", tag: "Stream • PCM" },
+  ],
+  "Science (PCB)": [
+    { q: "Describe a biological process you find most interesting.", tag: "Stream • PCB" },
+    { q: "How does chemistry connect to everyday life or healthcare?", tag: "Stream • PCB" },
+  ],
+  Commerce: [
+    { q: "Explain the difference between a balance sheet and an income statement.", tag: "Stream • Commerce" },
+    { q: "How do interest rates affect the economy?", tag: "Stream • Commerce" },
+  ],
+  "Arts / Humanities": [
+    { q: "Which historical event do you think shapes today's world the most?", tag: "Stream • Arts" },
+    { q: "How can literature influence society?", tag: "Stream • Arts" },
+  ],
+  Engineering: [
+    { q: "Describe an engineering project you contributed to.", tag: "Stream • Engineering" },
+    { q: "How do you approach debugging a system that suddenly fails?", tag: "Stream • Engineering" },
+  ],
+  "Computer Applications": [
+    { q: "Explain OOP in your own words with a real example.", tag: "Stream • CA" },
+    { q: "What is the difference between SQL and NoSQL databases?", tag: "Stream • CA" },
+  ],
+  "Management (BBA/MBA)": [
+    { q: "How would you motivate an underperforming team member?", tag: "Stream • Management" },
+    { q: "Describe a SWOT analysis you have done.", tag: "Stream • Management" },
+  ],
+  Medical: [
+    { q: "How do you handle emotionally heavy situations?", tag: "Stream • Medical" },
+    { q: "Why is empathy critical in healthcare?", tag: "Stream • Medical" },
+  ],
+  Law: [
+    { q: "Describe a recent case or law that interests you.", tag: "Stream • Law" },
+    { q: "How do you build an argument for a tough position?", tag: "Stream • Law" },
+  ],
+};
+
 function buildQuestions(p: Profile): { q: string; tag: string }[] {
   const field = p.field || "your chosen field";
   const stream = p.stream || "your stream";
@@ -92,6 +131,10 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
   const intro = [
     { q: `Tell us about yourself, ${p.fullName || "candidate"}.`, tag: "Introduction" },
     { q: `Why did you choose ${stream} after school?`, tag: "Background" },
+  ];
+
+  const streamQs = STREAM_QUESTIONS[p.stream] ?? [
+    { q: `Explain a key concept from ${stream} that shaped your thinking.`, tag: "Stream" },
   ];
 
   const career = [
@@ -104,7 +147,6 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
   ];
 
   const technical = [
-    { q: `Explain a concept from ${stream} that applies to ${field}.`, tag: "Technical" },
     { q: `How would you stay updated with new tools and skills in ${field}?`, tag: "Learning" },
     { q: `Tell us about a time you solved a difficult problem.`, tag: "Problem solving" },
   ];
@@ -122,9 +164,18 @@ function buildQuestions(p: Profile): { q: string; tag: string }[] {
     { q: `Do you have any questions for us?`, tag: "Closing" },
   ];
 
-  const all = [...intro, ...career, ...technical, ...behavior, ...close];
+  const all = [...intro, ...streamQs, ...career, ...technical, ...behavior, ...close];
   const count = MODES.find((m) => m.id === p.mode)?.count ?? 8;
   return all.slice(0, count);
+}
+
+function greeting(p: Profile): string {
+  const name = p.fullName.trim().split(/\s+/)[0] || "there";
+  const hour = new Date().getHours();
+  const tod = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const fieldLine = p.field ? ` Excited to explore your interest in ${p.field}.` : "";
+  const streamLine = p.stream ? ` We'll tailor questions to your ${p.stream} background.` : "";
+  return `${tod}, ${name}!${fieldLine}${streamLine} Take a breath — let's begin.`;
 }
 
 /* ---------------- Scoring heuristics ---------------- */
