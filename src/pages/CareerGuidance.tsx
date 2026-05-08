@@ -311,6 +311,7 @@ export default function CareerGuidance() {
             setAnswer={setAnswer}
             onSubmit={submitAnswer}
             onExit={() => setStage("profile")}
+            greeting={idx === 0 ? greeting(profile) : null}
           />
         )}
 
