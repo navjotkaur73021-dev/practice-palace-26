@@ -609,6 +609,8 @@ function Report({
         <ScoreCard label="Knowledge" value={scores.knowledge} />
       </div>
 
+      <PerformanceDashboard turns={turns} scores={scores} />
+
       <div className="grid md:grid-cols-3 gap-4">
         <TipCard title="Dressing Tips" items={tips.dressing} />
         <TipCard title="Communication Tips" items={tips.communication} />
