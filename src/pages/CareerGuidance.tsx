@@ -663,3 +663,103 @@ function TipCard({ title, items }: { title: string; items: string[] }) {
     </Card>
   );
 }
+
+/* ---------------- Performance Dashboard ---------------- */
+
+function answerScore(a: string): number {
+  const words = a.trim().split(/\s+/).filter(Boolean).length;
+  if (!words) return 0;
+  const text = a.toLowerCase();
+  const fillerHits = FILLERS.reduce((s, f) => s + (text.match(new RegExp(`\\b${f}\\b`, "g")) || []).length, 0);
+  const strongHits = STRONG.reduce((s, k) => s + (text.match(new RegExp(`\\b${k}\\b`, "g")) || []).length, 0);
+  let score = 40 + Math.min(40, words * 1.2) + strongHits * 5 - fillerHits * 4;
+  if (words > 25 && words < 90) score += 10;
+  return clamp(score);
+}
+
+function PerformanceDashboard({ turns, scores }: { turns: Turn[]; scores: ReturnType<typeof score> }) {
+  const lineData = turns.map((t, i) => ({ name: `Q${i + 1}`, score: answerScore(t.a) }));
+
+  const topicMap = new Map<string, { total: number; count: number }>();
+  turns.forEach((t) => {
+    const s = answerScore(t.a);
+    const cur = topicMap.get(t.tag) ?? { total: 0, count: 0 };
+    cur.total += s;
+    cur.count += 1;
+    topicMap.set(t.tag, cur);
+  });
+  const topicData = Array.from(topicMap.entries())
+    .map(([topic, v]) => ({ topic, score: Math.round(v.total / Math.max(1, v.count)) }))
+    .sort((a, b) => b.score - a.score);
+
+  const weak = topicData.slice().sort((a, b) => a.score - b.score).slice(0, 3);
+
+  return (
+    <Card className="p-6 space-y-6">
+      <div>
+        <h3 className="font-medium">Performance Dashboard</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Score progression across questions and topic-wise breakdown.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <div className="text-xs text-muted-foreground mb-2">Score per Question</div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs text-muted-foreground mb-2">Topic-wise Average</div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topicData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="topic" stroke="hsl(var(--muted-foreground))" fontSize={10} interval={0} angle={-20} textAnchor="end" height={60} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-muted-foreground mb-2">Weak Areas to Improve</div>
+        <div className="flex flex-wrap gap-2">
+          {weak.length === 0 && <span className="text-sm text-muted-foreground">No data yet.</span>}
+          {weak.map((w) => (
+            <Badge key={w.topic} variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+              {w.topic} · {w.score}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
