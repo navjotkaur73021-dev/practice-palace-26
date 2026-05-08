@@ -474,6 +474,7 @@ function InterviewPanel({
   setAnswer,
   onSubmit,
   onExit,
+  greeting,
 }: {
   idx: number;
   total: number;
@@ -482,6 +483,7 @@ function InterviewPanel({
   setAnswer: (s: string) => void;
   onSubmit: () => void;
   onExit: () => void;
+  greeting?: string | null;
 }) {
   const pct = ((idx) / total) * 100;
   return (
@@ -493,6 +495,12 @@ function InterviewPanel({
         </div>
         <Button variant="ghost" size="sm" onClick={onExit}>Exit</Button>
       </div>
+
+      {greeting && (
+        <Card className="p-4 border-primary/40 bg-primary/5">
+          <div className="text-sm">{greeting}</div>
+        </Card>
+      )}
 
       <Card className="p-6 space-y-4">
         <Badge variant="secondary">{current.tag}</Badge>
