@@ -24,6 +24,17 @@ import {
   RotateCcw,
   CheckCircle2,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 /* ---------------- Types ---------------- */
 
